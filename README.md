@@ -9,12 +9,12 @@ It became a full-stack cloud application built on AWS to automatically collect, 
 </p>
 
 <p align="center">
-<img width="480" height="270" alt="gif-slow" src="https://github.com/user-attachments/assets/af93f237-be07-42ec-8952-18e1a7df409f" />
+<img width="480" height="270" alt="gif-slow" src="https://github.com/user-attachments/assets/5597b913-358f-4a64-b0ae-7e141be6277c" />
 </p>
 
 ## 🏗️ Architecture Overview
 
-The system is divided into three main logical components:
+The system is divided into three main logcal components:
 
 1. **Data Collection (Event-Driven)**: An AWS EventBridge cron job triggers a Python Lambda function daily. It scrapes real-time car prices from external sources and stores the calculated averages in an Amazon DynamoDB table.
 2. **Notification Pipeline (Pipes & Filters)**: Using Lambda Destinations, successful data collection events are pushed to an SNS Topic, formatted by a dedicated Python Lambda, and sent to subscribers via Email using a second SNS Topic.
@@ -23,7 +23,7 @@ The system is divided into three main logical components:
 
 <br><br>
 <p align="center">
-<img width="1763" height="1269" alt="aws architecture" src="https://github.com/user-attachments/assets/0591b332-998f-480e-94b2-f3301cf204fe" />
+<img width="1763" height="1269" alt="aws architecture" src="https://github.com/user-attachments/assets/5573ae41-ce25-48d3-ad8a-12930c3cec5a" />
 </p>
 <br>
 
