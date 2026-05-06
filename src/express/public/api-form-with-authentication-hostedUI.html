@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Price Checker</title>
+</head>
+<body>
+    <h1>Check Car Price</h1>
+    <form id="carForm">
+        <label for="car_model">Select Car Model:</label>
+        <select id="car_model" name="car_model" required>
+            <option value="" disabled selected>Loading models from database...</option>
+        </select>
+        <button type="submit">Get Price</button>
+    </form>
+
+    <div id="result"></div>
+
+    <button id="logoutButton">Logout</button>
+
+    <script>
+        const cognitoDomain = '${COGNITO_DOMAIN}'; 
+        const clientId = '${COGNITO_CLIENT_ID}'; 
+        const redirectUri = 'https://${EC2_HOST}/api-form-with-authentication-hostedUI.html'; 
+        const apiBaseUrl = '${API_BASE_URL}';
+
+        function handleCognitoCallback() {
+            const urlParams = new URLSearchParams(window.location.hash.substring(1));
+            const idToken = urlParams.get('id_token');
+
+            if (idToken) {
+                localStorage.setItem('id_token', idToken);
+                window.location.hash = '';
+            } else if (!localStorage.getItem('id_token')) {
+                const loginUrl = `https://${cognitoDomain}/login?client_id=${clientId}&response_type=token&scope=openid+profile+email&redirect_uri=${redirectUri}`;
+                window.location.href = loginUrl;
+            }
+        }
+
+        handleCognitoCallback();
+
+        async function fetchAvailableModels() {
+            const token = localStorage.getItem('id_token');
+            if (!token) return;
+
+            const modelsApiUrl = `${apiBaseUrl}/models`;
+
+            try {
+                const response = await fetch(modelsApiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const selectElement = document.getElementById('car_model');
+
+                if (response.ok) {
+                    const models = await response.json(); 
+                    
+                    selectElement.innerHTML = '<option value="" disabled selected>Select a car model...</option>';
+                    
+                    models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model;
+                        option.textContent = model;
+                        selectElement.appendChild(option);
+                    });
+                } else {
+                    selectElement.innerHTML = '<option value="" disabled selected>Database connection error</option>';
+                    console.error('Error fetching models database:', response.status);
+                }
+            } catch (error) {
+                console.error('Network connection error:', error);
+            }
+        }
+
+        fetchAvailableModels();
+
+        document.getElementById('carForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const carModel = document.getElementById('car_model').value;
+            const apiUrl = `${apiBaseUrl}/car?model=${encodeURIComponent(carModel)}`;
+            const token = localStorage.getItem('id_token');
+
+            if (!token) {
+                alert('You are not authenticated. Please login.');
+                return;
+            }
+
+            fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = 
+                    `<p>An error occurred. Please try again.</p>`;
+            });
+        });
+
+        document.getElementById('logoutButton').addEventListener('click', function() {
+            localStorage.removeItem('id_token');
+            const loginUrl = `https://${cognitoDomain}/login?client_id=${clientId}&response_type=token&scope=openid+profile+email&redirect_uri=${redirectUri}`;
+            window.location.href = loginUrl;
+        });
+    </script>
+</body>
+</html>

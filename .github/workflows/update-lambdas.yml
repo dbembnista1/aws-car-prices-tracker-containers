@@ -1,0 +1,80 @@
+name: Deploy Lambda Functions
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/lambdas/**'
+
+permissions:
+  id-token: write 
+  contents: read
+
+jobs:
+  deploy-lambdas:
+    runs-on: ubuntu-latest
+    if: ${{ vars.PROJECT_NAME != '' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # STEP 1: Scan for changed files
+      - name: Check for file changes
+        uses: dorny/paths-filter@v4
+        id: changes
+        with:
+          filters: |
+            find_models:
+              - 'src/lambdas/api_find_models.py'
+            get_prices:
+              - 'src/lambdas/api_get_prices_by_model.py'
+            data_collector:
+              - 'src/lambdas/data_collector.py'
+            email_formatting:
+              - 'src/lambdas/email_formatting.py'
+
+      - name: Configure AWS Credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }} 
+          aws-region: eu-central-1
+
+      # STEP 2: Deploy find-models Lambda 
+      - name: Update Lambda - Find Models
+        if: steps.changes.outputs.find_models == 'true'
+        run: |
+          cd src/lambdas
+          zip find-models.zip api_find_models.py
+          aws lambda update-function-code \
+            --function-name ${{ vars.PROJECT_NAME }}-find-models \
+            --zip-file fileb://find-models.zip
+            
+      # STEP 3: Deploy get-prices Lambda
+      - name: Update Lambda - Get Prices
+        if: steps.changes.outputs.get_prices == 'true'
+        run: |
+          cd src/lambdas
+          zip get-prices.zip api_get_prices_by_model.py
+          aws lambda update-function-code \
+            --function-name ${{ vars.PROJECT_NAME }}-get-prices \
+            --zip-file fileb://get-prices.zip
+
+      # STEP 4: Deploy Data Collector Lambda
+      - name: Update Lambda - Data Collector
+        if: steps.changes.outputs.data_collector == 'true'
+        run: |
+          cd src/lambdas
+          zip collector.zip data_collector.py
+          aws lambda update-function-code \
+            --function-name ${{ vars.PROJECT_NAME }}-data-collector \
+            --zip-file fileb://collector.zip
+
+      # STEP 5: Deploy Formatter Lambda
+      - name: Update Lambda - Email Formatter
+        if: steps.changes.outputs.email_formatting == 'true'
+        run: |
+          cd src/lambdas
+          zip formatter.zip email_formatting.py
+          aws lambda update-function-code \
+            --function-name ${{ vars.PROJECT_NAME }}-formatter \
+            --zip-file fileb://formatter.zip
