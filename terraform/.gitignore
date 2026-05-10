@@ -15,5 +15,8 @@ crash.log
 *.pem
 
 
-#Ignore zip files
+# Ignore zip files
 *.zip
+
+# Backend configuration
+backend.conf

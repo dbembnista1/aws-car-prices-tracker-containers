@@ -114,7 +114,7 @@ systemctl enable httpd
 systemctl start httpd
 
 # Initial Application Deployment
-git clone https://github.com/dbembnista1/project1-car-prices-terraform.git /tmp/car-prices-repo
+git clone https://github.com/dbembnista1/aws-car-prices-tracker.git /tmp/car-prices-repo
 mkdir -p /var/www/app
 cp -r /tmp/car-prices-repo/src/express/* /var/www/app/
 rm -rf /tmp/car-prices-repo
