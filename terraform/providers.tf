@@ -7,8 +7,6 @@ terraform {
       version = "~> 6.0"
     }
     github = {
-
-
       source  = "integrations/github"
       version = "~> 6.0"
     }
@@ -19,7 +17,13 @@ provider "aws" {
   region = "eu-central-1"
 }
 
+variable "github_token" {
+  description = "GitHub token for managing repository resources"
+  type        = string
+  default     = null
+}
 
 provider "github" {
   owner = var.github_owner
+  token = var.github_token
 }
