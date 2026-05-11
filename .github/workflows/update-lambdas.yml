@@ -1,6 +1,10 @@
-name: Deploy Lambda Functions
+name: Lambda CI/CD
 
 on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/lambdas/**'
   push:
     branches: [ main ]
     paths:
@@ -11,9 +15,32 @@ permissions:
   contents: read
 
 jobs:
-  deploy-lambdas:
+  validate-lambdas:
     runs-on: ubuntu-latest
     if: ${{ vars.PROJECT_NAME != '' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install linting tools
+        run: pip install flake8
+
+      - name: Lint Lambda code
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 src/lambdas --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 src/lambdas --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+  deploy-lambdas:
+    needs: validate-lambdas
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PROJECT_NAME != ''
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
