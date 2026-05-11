@@ -14,22 +14,22 @@ module "network" {
 
 #Apache server
 module "compute" {
-  source             = "./modules/compute"
-  project_name       = var.project_name
-  instance_type      = "t3.micro"
-  tags               = var.common_tags
-  
+  source        = "./modules/compute"
+  project_name  = var.project_name
+  instance_type = "t3.micro"
+  tags          = var.common_tags
+
   #network
-  vpc_id             = module.network.vpc_id 
-  subnet_id          = module.network.public_subnet_id 
-  
+  vpc_id    = module.network.vpc_id
+  subnet_id = module.network.public_subnet_id
+
   #db
   dynamodb_table_arn = module.database.table_arn
-  
+
   #variables for html file
-  api_base_url            = module.api.api_url
-  cognito_domain          = module.cognito.cognito_domain
-  cognito_client_id       = module.cognito.client_id
+  api_base_url      = module.api.api_url
+  cognito_domain    = module.cognito.cognito_domain
+  cognito_client_id = module.cognito.client_id
 }
 
 
@@ -52,10 +52,10 @@ module "api" {
 
 module "data_collector" {
   source = "./modules/data-collector"
-  
+
   # If enable_data_collector = true, create 1. Else 0.
-  count  = var.enable_data_collector ? 1 : 0
-  
+  count = var.enable_data_collector ? 1 : 0
+
   project_name       = var.project_name
   dynamodb_table_arn = module.database.table_arn
   collector_urls     = var.collector_urls
@@ -69,8 +69,8 @@ module "data_collector" {
 
 resource "github_actions_secret" "ec2_host" {
   # If enable_github_secrets = true, create 1. Else 0.
-  count           = var.enable_github_secrets ? 1 : 0
-  
+  count = var.enable_github_secrets ? 1 : 0
+
   repository      = var.github_repository
   secret_name     = "EC2_HOST"
   plaintext_value = module.compute.instance_public_ip
@@ -78,8 +78,8 @@ resource "github_actions_secret" "ec2_host" {
 
 
 resource "github_actions_secret" "ec2_ssh_key" {
-  count           = var.enable_github_secrets ? 1 : 0
-  
+  count = var.enable_github_secrets ? 1 : 0
+
   repository      = var.github_repository
   secret_name     = "EC2_SSH_KEY"
   plaintext_value = module.compute.private_key_pem
@@ -118,13 +118,13 @@ resource "github_actions_variable" "api_base_url" {
 # Notifications module (SNS + Lambda Formatter)
 module "notifications" {
   source = "./modules/notifications"
-  
+
   # Only creates if collector is enabled AND email is not empty
   count = (var.enable_data_collector && var.subscriber_email != "") ? 1 : 0
 
-  project_name          = var.project_name
-  subscriber_email      = var.subscriber_email
-  
+  project_name     = var.project_name
+  subscriber_email = var.subscriber_email
+
   # Dependencies from the data_collector module
   collector_lambda_name = module.data_collector[0].lambda_name
   collector_role_name   = module.data_collector[0].collector_role_name

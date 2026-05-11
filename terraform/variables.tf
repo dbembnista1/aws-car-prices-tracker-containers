@@ -46,7 +46,7 @@ variable "collector_urls" {
 variable "pandas_layer_arn" {
   description = "ARN of the AWS SDK Pandas Layer"
   type        = string
-  default     = "arn:aws:lambda:eu-central-1:336392948345:layer:AWSSDKPandas-Python314:2" 
+  default     = "arn:aws:lambda:eu-central-1:336392948345:layer:AWSSDKPandas-Python314:2"
 }
 
 variable "subscriber_email" {

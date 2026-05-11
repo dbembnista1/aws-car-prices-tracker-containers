@@ -12,8 +12,8 @@ resource "aws_iam_role" "collector_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
       Principal = { Service = "lambda.amazonaws.com" }
     }]
   })
@@ -49,13 +49,13 @@ resource "aws_lambda_function" "collector" {
   function_name    = "${var.project_name}-data-collector"
   role             = aws_iam_role.collector_role.arn
   handler          = "data_collector.lambda_handler"
-  runtime          = "python3.14" 
+  runtime          = "python3.14"
   memory_size      = 128
-  timeout          = 300 
+  timeout          = 300
   source_code_hash = data.archive_file.collector_zip.output_base64sha256
-  
+
   # Layer provided by user
-  layers = [var.pandas_layer_arn] 
+  layers = [var.pandas_layer_arn]
 
   environment {
     variables = {
@@ -68,7 +68,7 @@ resource "aws_lambda_function" "collector" {
 resource "aws_cloudwatch_event_rule" "daily_collector" {
   name                = "${var.project_name}-daily-collector"
   description         = "Triggers the data collector Lambda daily at 8:00 CET"
-  schedule_expression = "cron(0 7 * * ? *)" 
+  schedule_expression = "cron(0 7 * * ? *)"
 }
 
 # Link EventBridge to Lambda

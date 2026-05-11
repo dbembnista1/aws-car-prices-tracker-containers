@@ -7,8 +7,8 @@ terraform {
       version = "~> 6.0"
     }
     github = {
-    
-    
+
+
       source  = "integrations/github"
       version = "~> 6.0"
     }
@@ -16,7 +16,7 @@ terraform {
 }
 
 provider "aws" {
-  region  = "eu-central-1"
+  region = "eu-central-1"
 }
 
 

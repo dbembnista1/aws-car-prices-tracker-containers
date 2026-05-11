@@ -192,7 +192,7 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 # Reserve elastic ip
 resource "aws_eip" "web_server_eip" {
   domain = "vpc"
-  
+
   tags = merge(var.tags, { Name = "${var.project_name}-static-ip" })
 }
 
