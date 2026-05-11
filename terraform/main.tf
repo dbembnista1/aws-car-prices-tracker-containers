@@ -1,3 +1,4 @@
+# Main entry point for car prices infrastructure
 module "database" {
   source        = "./modules/database"
   table_name    = "car_prices"
