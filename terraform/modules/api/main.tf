@@ -18,8 +18,8 @@ resource "aws_iam_role" "lambda_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
       Principal = { Service = "lambda.amazonaws.com" }
     }]
   })
@@ -163,10 +163,10 @@ resource "aws_api_gateway_method" "models_options" {
 }
 
 resource "aws_api_gateway_integration" "models_options_integration" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.models.id
-  http_method = aws_api_gateway_method.models_options.http_method
-  type        = "MOCK"
+  rest_api_id       = aws_api_gateway_rest_api.api.id
+  resource_id       = aws_api_gateway_resource.models.id
+  http_method       = aws_api_gateway_method.models_options.http_method
+  type              = "MOCK"
   request_templates = { "application/json" = "{\"statusCode\": 200}" }
 }
 
@@ -204,10 +204,10 @@ resource "aws_api_gateway_method" "car_options" {
 }
 
 resource "aws_api_gateway_integration" "car_options_integration" {
-  rest_api_id = aws_api_gateway_rest_api.api.id
-  resource_id = aws_api_gateway_resource.car.id
-  http_method = aws_api_gateway_method.car_options.http_method
-  type        = "MOCK"
+  rest_api_id       = aws_api_gateway_rest_api.api.id
+  resource_id       = aws_api_gateway_resource.car.id
+  http_method       = aws_api_gateway_method.car_options.http_method
+  type              = "MOCK"
   request_templates = { "application/json" = "{\"statusCode\": 200}" }
 }
 

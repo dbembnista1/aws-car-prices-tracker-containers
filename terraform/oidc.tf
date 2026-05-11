@@ -38,8 +38,8 @@ resource "aws_iam_role" "github_actions_role" {
 # 4. Automatyczne wysłanie ARN tej roli jako Sekret do GitHuba
 resource "github_actions_secret" "aws_oidc_role_arn" {
   # Opcjonalne: Używamy count, jeśli chcesz by to było przełączane
-  count           = var.enable_github_secrets ? 1 : 0
-  
+  count = var.enable_github_secrets ? 1 : 0
+
   repository      = var.github_repository
   secret_name     = "AWS_OIDC_ROLE_ARN"
   plaintext_value = aws_iam_role.github_actions_role.arn
@@ -47,5 +47,5 @@ resource "github_actions_secret" "aws_oidc_role_arn" {
 
 resource "aws_iam_role_policy_attachment" "github_actions_admin" {
   role       = aws_iam_role.github_actions_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess" 
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }

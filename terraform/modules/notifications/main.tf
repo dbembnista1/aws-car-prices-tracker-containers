@@ -29,7 +29,7 @@ resource "aws_lambda_function_event_invoke_config" "collector_destination" {
 # 5. IAM Policy: Allow Data Collector to publish to raw SNS topic
 resource "aws_iam_role_policy" "collector_sns_publish" {
   name = "${var.project_name}-collector-sns-publish"
-  role = var.collector_role_name 
+  role = var.collector_role_name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -58,8 +58,8 @@ resource "aws_iam_role" "formatter_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
       Principal = { Service = "lambda.amazonaws.com" }
     }]
   })

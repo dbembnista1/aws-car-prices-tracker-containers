@@ -42,7 +42,7 @@ resource "random_string" "domain_suffix" {
 
 # unique dmain
 resource "aws_cognito_user_pool_domain" "main" {
-  domain       = "${var.project_name}-users-${random_string.domain_suffix.result}" 
+  domain       = "${var.project_name}-users-${random_string.domain_suffix.result}"
   user_pool_id = aws_cognito_user_pool.pool.id
 }
 
@@ -58,13 +58,13 @@ resource "aws_cognito_user_pool_client" "client" {
 
   supported_identity_providers = ["COGNITO"]
 
-  
+
   callback_urls = ["https://${var.web_server_ip}/api-form-with-authentication-hostedUI.html"]
   logout_urls   = ["https://${var.web_server_ip}/api-form-with-authentication-hostedUI.html"]
 
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_flows                  = ["implicit"]
   allowed_oauth_scopes                 = ["email", "openid", "phone", "profile"]
-  
+
   prevent_user_existence_errors = "ENABLED"
 }
