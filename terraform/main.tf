@@ -32,13 +32,13 @@ module "compute" {
   cognito_client_id = module.cognito.client_id
 }
 
-
+/*
 module "cognito" {
   source        = "./modules/cognito"
   project_name  = var.project_name
   web_server_ip = module.compute.instance_public_ip
 }
-
+*/
 
 
 module "api" {
