@@ -45,6 +45,15 @@ resource "github_actions_secret" "aws_oidc_role_arn" {
   plaintext_value = aws_iam_role.github_actions_role.arn
 }
 
+# 5. Automatyczne wysłanie samego tokena jako Sekret (dla CI/CD)
+resource "github_actions_secret" "github_token" {
+  count = var.enable_github_secrets ? 1 : 0
+
+  repository      = var.github_repository
+  secret_name     = "GH_PAT"
+  plaintext_value = var.github_token
+}
+
 resource "aws_iam_role_policy_attachment" "github_actions_admin" {
   role       = aws_iam_role.github_actions_role.name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"

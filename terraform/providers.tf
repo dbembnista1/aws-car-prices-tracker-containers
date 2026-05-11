@@ -21,6 +21,7 @@ variable "github_token" {
   description = "GitHub token for managing repository resources"
   type        = string
   default     = null
+  sensitive   = true
 }
 
 provider "github" {
