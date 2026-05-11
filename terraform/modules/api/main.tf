@@ -57,6 +57,10 @@ resource "aws_lambda_function" "find_models" {
   handler          = "api_find_models.lambda_handler"
   runtime          = "python3.14"
   source_code_hash = data.archive_file.find_models_zip.output_base64sha256
+
+  lifecycle {
+    ignore_changes = [source_code_hash]
+  }
 }
 
 resource "aws_lambda_function" "get_prices" {
@@ -66,6 +70,10 @@ resource "aws_lambda_function" "get_prices" {
   handler          = "api_get_prices_by_model.lambda_handler"
   runtime          = "python3.14"
   source_code_hash = data.archive_file.get_prices_zip.output_base64sha256
+
+  lifecycle {
+    ignore_changes = [source_code_hash]
+  }
 }
 
 # api gw and cognito

@@ -137,6 +137,10 @@ sudo -u ec2-user pm2 save
 EOF
 
   tags = merge(var.tags, { Name = "${var.project_name}-web-server" })
+
+  lifecycle {
+    ignore_changes = [user_data, user_data_replace_on_change]
+  }
 }
 
 resource "aws_iam_policy" "dynamodb_read_policy" {

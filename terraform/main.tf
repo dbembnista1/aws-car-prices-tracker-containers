@@ -1,3 +1,9 @@
+resource "random_string" "pipka" {
+  length  = 6
+  special = false
+  upper   = false
+}
+
 # Main entry point for car prices infrastructure
 module "database" {
   source        = "./modules/database"
