@@ -38,4 +38,4 @@ def build_response(status_code, body):
             'Access-Control-Allow-Methods': 'GET,OPTIONS'
         },
         'body': json.dumps(body)
-    }# Verified by Lambda CI/CD pipeline
+    }# Verified by Lambda CI/CD pipeline!!!!
