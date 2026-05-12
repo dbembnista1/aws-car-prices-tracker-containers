@@ -1,10 +1,10 @@
 variable "repository_name" {
   description = "Name of the ECR repository"
-  type        = STRING
+  type        = string
 }
 
 variable "tags" {
   description = "Tags to apply to the repository"
-  type        = map(STRING)
+  type        = map(string)
   default     = {}
 }
