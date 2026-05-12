@@ -1,0 +1,51 @@
+﻿name: App CI/CD (Docker to ECR)
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/express/**'
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/express/**'
+
+permissions:
+  id-token: write # Required for requesting the JWT
+  contents: read  # Required for actions/checkout
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    if: vars.PROJECT_NAME != ''
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: eu-central-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.PROJECT_NAME }}-app
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cd src/express
+          
+          # Build the docker image
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          
+          # Push specific tag
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          
+          # Push latest tag (useful for ECS later)
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest

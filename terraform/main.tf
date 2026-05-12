@@ -18,8 +18,15 @@ module "network" {
   project_name = var.project_name
 }
 
+module "ecr" {
+  source          = "./modules/ecr"
+  repository_name = "${var.project_name}-app"
+  tags            = var.common_tags
+}
+
 #Apache server
 module "compute" {
+
   source        = "./modules/compute"
   project_name  = var.project_name
   instance_type = "t3.micro"
@@ -119,6 +126,13 @@ resource "github_actions_variable" "api_base_url" {
   repository    = var.github_repository
   variable_name = "API_BASE_URL"
   value         = module.api.api_url
+}
+
+resource "github_actions_variable" "ecr_repository_url" {
+  count         = var.enable_github_secrets ? 1 : 0
+  repository    = var.github_repository
+  variable_name = "ECR_REPOSITORY_URL"
+  value         = module.ecr.repository_url
 }
 
 # Notifications module (SNS + Lambda Formatter)
