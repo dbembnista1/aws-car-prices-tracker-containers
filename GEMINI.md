@@ -38,3 +38,10 @@ Outline zadan do wykonania:
    2. Dokumentacja: Opisanie nowej architektury w README jako gotowego projektu do portfolio.
 
    Chcemy pracowac tak jak w teamie developerskim - czyli pamietac zeby uzywac branchy!!!
+   
+  # Środowisko i Terminal
+- ZAWSZE używaj składni PowerShell. Pracujemy w środowisku Windows.
+- Nigdy nie używaj narzędzi linuksowych takich jak `sed`, `awk`, `grep`, `cat`, `ls`, `cp`, `rm`.
+- Do edycji plików z poziomu terminala używaj natywnych poleceń PowerShell, np. `Get-Content`, `Set-Content`, `Add-Content` lub `Out-File`.
+- Do wyszukiwania tekstu używaj `Select-String`.
+- Pamiętaj, że starsze wersje PowerShell nie obsługują operatora `&&` tak jak Bash – jeśli łączysz komendy, używaj `;` (średnika) lub upewnij się, że korzystasz ze składni PowerShell 7+.
