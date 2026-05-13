@@ -12,6 +12,10 @@ resource "aws_s3_object" "seed_file" {
   key    = "historical_data.csv"
   source = var.csv_file_path
   etag   = filemd5(var.csv_file_path)
+
+  lifecycle {
+    ignore_changes = [etag]
+  }
 }
 
 # DynamoDB table created directly from the S3 CSV file

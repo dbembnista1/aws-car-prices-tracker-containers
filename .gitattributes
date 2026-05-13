@@ -1,0 +1,3 @@
+# Wymuszamy, aby pliki CSV zawsze miały znaki końca linii LF (Linux)
+# Zapobiega to różnicom w hashach MD5 między Windowsem a GitHub Actions
+*.csv text eol=lf

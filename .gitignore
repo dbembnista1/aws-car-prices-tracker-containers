@@ -1,0 +1,29 @@
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+backend.conf
+
+# SSH keys
+*.pem
+
+# Archives
+*.zip
+
+# Node.js
+node_modules/
+npm-debug.log*
+
+# Environment variables
+.env
+.env.*
+
+# Cursor
+.cursor/
+
+# Markdown files
+*.md
+*.mdc
+!README.md
