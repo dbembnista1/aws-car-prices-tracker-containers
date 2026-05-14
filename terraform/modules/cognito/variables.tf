@@ -3,7 +3,7 @@ variable "project_name" {
   type        = string
 }
 
-variable "web_server_ip" {
-  description = "Elastic IP of the web server for Callback URLs"
+variable "app_hostname" {
+  description = "Hostname (ALB DNS name) used for Cognito callback and logout URLs"
   type        = string
 }

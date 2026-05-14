@@ -24,6 +24,22 @@ module "ecr" {
   tags            = var.common_tags
 }
 
+module "ecs" {
+  source = "./modules/ecs"
+
+  project_name       = var.project_name
+  vpc_id             = module.network.vpc_id
+  subnet_ids         = module.network.public_subnet_ids
+  ecr_repository_url = module.ecr.repository_url
+  dynamodb_table_arn = module.database.table_arn
+
+  cognito_domain    = module.cognito.cognito_domain
+  cognito_client_id = module.cognito.client_id
+  api_base_url      = module.api.api_url
+
+  tags = var.common_tags
+}
+
 #Apache server
 module "compute" {
 
@@ -34,7 +50,7 @@ module "compute" {
 
   #network
   vpc_id    = module.network.vpc_id
-  subnet_id = module.network.public_subnet_id
+  subnet_id = module.network.public_subnet_ids[0]
 
   #db
   dynamodb_table_arn = module.database.table_arn
@@ -47,9 +63,9 @@ module "compute" {
 
 
 module "cognito" {
-  source        = "./modules/cognito"
-  project_name  = var.project_name
-  web_server_ip = module.compute.instance_public_ip
+  source       = "./modules/cognito"
+  project_name = var.project_name
+  app_hostname = module.ecs.alb_dns_name
 }
 
 
@@ -133,6 +149,20 @@ resource "github_actions_variable" "ecr_repository_url" {
   repository    = var.github_repository
   variable_name = "ECR_REPOSITORY_URL"
   value         = module.ecr.repository_url
+}
+
+resource "github_actions_variable" "ecs_cluster_name" {
+  count         = var.enable_github_secrets ? 1 : 0
+  repository    = var.github_repository
+  variable_name = "ECS_CLUSTER_NAME"
+  value         = module.ecs.cluster_name
+}
+
+resource "github_actions_variable" "ecs_service_name" {
+  count         = var.enable_github_secrets ? 1 : 0
+  repository    = var.github_repository
+  variable_name = "ECS_SERVICE_NAME"
+  value         = module.ecs.service_name
 }
 
 # Notifications module (SNS + Lambda Formatter)

@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libgif-dev \
     librsvg2-dev \
+    gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
 # Tworzymy katalog roboczy wewnątrz kontenera
@@ -24,8 +25,9 @@ RUN npm install --only=production
 # Kopiujemy resztę kodu aplikacji
 COPY . .
 
+RUN chmod +x docker-entrypoint.sh
+
 # Informujemy, że kontener nasłuchuje na porcie 3000
 EXPOSE 3000
 
-# Komenda uruchamiająca aplikację
-CMD [ "npm", "start" ]
+ENTRYPOINT ["./docker-entrypoint.sh"]
