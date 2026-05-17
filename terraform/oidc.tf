@@ -47,7 +47,7 @@ resource "github_actions_secret" "aws_oidc_role_arn" {
 
 # 5. Automatyczne wysłanie samego tokena jako Sekret (dla CI/CD)
 resource "github_actions_secret" "github_token" {
-  count = var.enable_github_secrets ? 1 : 0
+  count = (var.enable_github_secrets && var.github_token != null) ? 1 : 0
 
   repository      = var.github_repository
   secret_name     = "GH_PAT"

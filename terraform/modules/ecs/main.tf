@@ -153,7 +153,7 @@ resource "aws_ecs_task_definition" "app" {
       { name = "COGNITO_DOMAIN", value = var.cognito_domain },
       { name = "COGNITO_CLIENT_ID", value = var.cognito_client_id },
       { name = "API_BASE_URL", value = var.api_base_url },
-      { name = "APP_HOST", value = aws_lb.main.dns_name },
+      { name = "APP_HOST", value = aws_cloudfront_distribution.app.domain_name },
     ]
 
     logConfiguration = {
@@ -170,37 +170,6 @@ resource "aws_ecs_task_definition" "app" {
 }
 
 data "aws_region" "current" {}
-
-# ─── Self-signed certificate for HTTPS (required by Cognito callback URL) ────
-
-resource "tls_private_key" "alb" {
-  algorithm = "RSA"
-  rsa_bits  = 2048
-}
-
-resource "tls_self_signed_cert" "alb" {
-  private_key_pem = tls_private_key.alb.private_key_pem
-
-  subject {
-    common_name  = "${var.project_name}-app"
-    organization = "Car Prices App"
-  }
-
-  validity_period_hours = 8760
-
-  allowed_uses = [
-    "key_encipherment",
-    "digital_signature",
-    "server_auth",
-  ]
-}
-
-resource "aws_acm_certificate" "alb" {
-  private_key      = tls_private_key.alb.private_key_pem
-  certificate_body = tls_self_signed_cert.alb.cert_pem
-
-  tags = var.tags
-}
 
 # ─── Application Load Balancer ───────────────────────────────────────────────
 
@@ -244,19 +213,6 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-resource "aws_lb_listener" "https" {
-  load_balancer_arn = aws_lb.main.arn
-  port              = 443
-  protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = aws_acm_certificate.alb.arn
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.app.arn
-  }
-}
-
 # ─── ECS Service ─────────────────────────────────────────────────────────────
 
 resource "aws_ecs_service" "app" {
@@ -281,7 +237,59 @@ resource "aws_ecs_service" "app" {
     container_port   = var.container_port
   }
 
-  depends_on = [aws_lb_listener.http, aws_lb_listener.https]
+  depends_on = [aws_lb_listener.http]
+
+  tags = var.tags
+}
+
+# ─── CloudFront Distribution ──────────────────────────────────────────────────
+
+resource "aws_cloudfront_distribution" "app" {
+  enabled             = true
+  is_ipv6_enabled     = true
+  wait_for_deployment = false
+
+  origin {
+    domain_name = aws_lb.main.dns_name
+    origin_id   = "ALB-${aws_lb.main.name}"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  default_cache_behavior {
+    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "ALB-${aws_lb.main.name}"
+
+    forwarded_values {
+      query_string = true
+      headers      = ["*"]
+
+      cookies {
+        forward = "all"
+      }
+    }
+
+    viewer_protocol_policy = "redirect-to-https"
+    min_ttl                = 0
+    default_ttl            = 0
+    max_ttl                = 0
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
 
   tags = var.tags
 }

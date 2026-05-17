@@ -1,9 +1,3 @@
-resource "random_string" "pipka" {
-  length  = 6
-  special = false
-  upper   = false
-}
-
 # Main entry point for car prices infrastructure
 module "database" {
   source        = "./modules/database"
@@ -65,7 +59,7 @@ module "compute" {
 module "cognito" {
   source       = "./modules/cognito"
   project_name = var.project_name
-  app_hostname = module.ecs.alb_dns_name
+  app_hostname = module.ecs.cloudfront_domain_name
 }
 
 
