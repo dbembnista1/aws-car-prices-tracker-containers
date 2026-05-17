@@ -59,8 +59,8 @@ resource "aws_cognito_user_pool_client" "client" {
   supported_identity_providers = ["COGNITO"]
 
 
-  callback_urls = ["https://${var.web_server_ip}/api-form-with-authentication-hostedUI.html"]
-  logout_urls   = ["https://${var.web_server_ip}/api-form-with-authentication-hostedUI.html"]
+  callback_urls = ["https://${var.app_hostname}/api-form-with-authentication-hostedUI.html"]
+  logout_urls   = ["https://${var.app_hostname}/api-form-with-authentication-hostedUI.html"]
 
   allowed_oauth_flows_user_pool_client = true
   allowed_oauth_flows                  = ["implicit"]
