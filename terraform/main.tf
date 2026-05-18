@@ -34,27 +34,6 @@ module "ecs" {
   tags = var.common_tags
 }
 
-#Apache server
-module "compute" {
-
-  source        = "./modules/compute"
-  project_name  = var.project_name
-  instance_type = "t3.micro"
-  tags          = var.common_tags
-
-  #network
-  vpc_id    = module.network.vpc_id
-  subnet_id = module.network.public_subnet_ids[0]
-
-  #db
-  dynamodb_table_arn = module.database.table_arn
-
-  #variables for html file
-  api_base_url      = module.api.api_url
-  cognito_domain    = module.cognito.cognito_domain
-  cognito_client_id = module.cognito.client_id
-}
-
 
 module "cognito" {
   source       = "./modules/cognito"
@@ -86,27 +65,6 @@ module "data_collector" {
 }
 
 
-
-#GITHUB secrets (CICD enablement for web server, optional)
-
-
-resource "github_actions_secret" "ec2_host" {
-  # If enable_github_secrets = true, create 1. Else 0.
-  count = var.enable_github_secrets ? 1 : 0
-
-  repository      = var.github_repository
-  secret_name     = "EC2_HOST"
-  plaintext_value = module.compute.instance_public_ip
-}
-
-
-resource "github_actions_secret" "ec2_ssh_key" {
-  count = var.enable_github_secrets ? 1 : 0
-
-  repository      = var.github_repository
-  secret_name     = "EC2_SSH_KEY"
-  plaintext_value = module.compute.private_key_pem
-}
 
 #GITHUB variables
 
