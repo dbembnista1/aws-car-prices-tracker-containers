@@ -11,3 +11,8 @@ output "dynamodb_table_name" {
 output "aws_region" {
   value = var.aws_region
 }
+
+output "github_actions_role_arn" {
+  value       = aws_iam_role.github_actions_role.arn
+  description = "ARN of the IAM Role used by GitHub Actions"
+}

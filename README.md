@@ -52,20 +52,32 @@ Both workflows use defensive checks to ensure they only run if the necessary inf
 
 ---
 
-## 🚀 Setup & Deployment
+## 🚀 Setup & Deployment (Admin vs Team Workflow)
 
-### 1. Prerequisites
+This project uses a separated state lifecycle to ensure safe CI/CD deployments and seamless team collaboration.
+
+### 1. Initialization (Admin / DevOps) - Do this once
+The "Bootstrap" phase creates the immutable foundation: S3 bucket for Terraform state, DynamoDB for locks, and the OIDC Provider for GitHub Actions. This step must be executed manually by an administrator.
+
+**Prerequisites:**
 * [Terraform](https://www.terraform.io/downloads.html) installed locally.
-* An AWS Account and configured AWS CLI (`aws configure`).
-* **GitHub Personal Access Token (PAT)** with `repo` scope, set as an environment variable: `export GITHUB_TOKEN=your_token_here` (required only for CI/CD - if `enable_github_secrets` is set to `true`).
+* An AWS Account and configured AWS CLI (`aws configure`) with Admin access.
+* **GitHub Personal Access Token (PAT)** with `repo` scope, set as an environment variable: `export TF_VAR_github_token=your_token_here`.
 
-### 2. Infrastructure Configuration - OPTIONAL
-To customize the deployment, create a `terraform/terraform.tfvars` file based on your preferences:
+```bash
+cd terraform/bootstrap
+# Customize variables in variables.tf if needed
+terraform init
+terraform apply
+```
+
+### 2. Infrastructure Configuration (Optional)
+To customize the main deployment, create a `terraform/terraform.tfvars` file based on your preferences. You can also configure these variables directly in your CI/CD pipeline.
 
 ```hcl
 project_name = "car-prices"
 
-# 1. Enable GitHub Actions CI/CD (Requires OIDC setup)
+# 1. Enable GitHub Actions CI/CD (Requires OIDC setup from Bootstrap)
 enable_github_secrets = true
 github_owner          = "your-github-username"
 github_repository     = "your-repo-name"
@@ -78,24 +90,26 @@ collector_urls        = "https://url1.com,https://url2.com,https://url3.com"
 subscriber_email      = "your.email@example.com"
 ```
 
-### 3. Deploy to AWS
+### 3. Deploy to AWS (Team Collaboration)
+Once the bootstrap is complete, **developers do not need AWS keys**. The entire lifecycle of the main infrastructure is managed by GitHub Actions using the OIDC role.
 
-Run the following commands to provision your cloud environment:
+1. Create a new branch and push your changes to GitHub.
+2. A Pull Request will trigger a `terraform plan` via GitHub Actions, adding the results as a comment.
+3. Merging the PR to the `main` branch will automatically execute `terraform apply`, deploying the infrastructure to AWS.
 
-```bash
-cd terraform
-terraform init
-terraform apply
-```
-
-*Note: If you enabled notifications, check your email to confirm the AWS SNS subscription.*
-
-
+If you ever decide to run `terraform destroy` on the main infrastructure, it will wipe all resources (ECS, DynamoDB, API Gateway) **except** the Bootstrap (S3, DynamoDB Locks, OIDC). This means GitHub Actions will retain its AWS access and can rebuild the infrastructure automatically on the next push.
 
 ## 🧹 Cleanup
 
-To remove all resources and stop AWS charges:
+To remove all resources and stop AWS charges (leaving the Bootstrap intact for future use):
 ```bash
+cd terraform
+terraform destroy
+```
+
+To fully destroy the environment including the remote state and OIDC roles (disables CI/CD):
+```bash
+cd terraform/bootstrap
 terraform destroy
 ```
 
