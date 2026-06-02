@@ -1,12 +1,39 @@
 $ErrorActionPreference = 'Stop'
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location "$ScriptDir\..\terraform"
+$BackendConf = "$ScriptDir\..\terraform\backend.conf"
 
-if (-not (Test-Path "backend.conf")) {
-  Write-Error "ERROR: terraform/backend.conf not found. Copy backend.conf.example and fill in your values."
-  exit 1
+if (-not (Test-Path $BackendConf)) {
+  Write-Host "backend.conf not found. Reading values from bootstrap outputs..."
+
+  Push-Location "$ScriptDir\..\terraform\bootstrap"
+  try {
+    $Outputs = terraform output -json | ConvertFrom-Json
+  } finally {
+    Pop-Location
+  }
+
+  $BucketName = $Outputs.state_bucket_name.value
+  $TableName  = $Outputs.dynamodb_table_name.value
+  $Region     = $Outputs.aws_region.value
+
+  if (-not $BucketName -or -not $TableName) {
+    Write-Error "ERROR: Could not read bootstrap outputs. Run 'terraform apply' in terraform/bootstrap first."
+    exit 1
+  }
+
+  @"
+bucket         = "$BucketName"
+key            = "terraform.tfstate"
+region         = "$Region"
+dynamodb_table = "$TableName"
+encrypt        = true
+"@ | Set-Content $BackendConf
+
+  Write-Host "backend.conf generated from bootstrap outputs."
 }
+
+Set-Location "$ScriptDir\..\terraform"
 
 $env:TZ = "UTC"
 

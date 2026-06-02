@@ -2,12 +2,34 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR/../terraform"
+BACKEND_CONF="$SCRIPT_DIR/../terraform/backend.conf"
 
-if [ ! -f "backend.conf" ]; then
-  echo "ERROR: terraform/backend.conf not found. Copy backend.conf.example and fill in your values."
-  exit 1
+if [ ! -f "$BACKEND_CONF" ]; then
+  echo "backend.conf not found. Reading values from bootstrap outputs..."
+
+  pushd "$SCRIPT_DIR/../terraform/bootstrap" > /dev/null
+  BUCKET_NAME=$(terraform output -raw state_bucket_name)
+  TABLE_NAME=$(terraform output -raw dynamodb_table_name)
+  REGION=$(terraform output -raw aws_region)
+  popd > /dev/null
+
+  if [ -z "$BUCKET_NAME" ] || [ -z "$TABLE_NAME" ]; then
+    echo "ERROR: Could not read bootstrap outputs. Run 'terraform apply' in terraform/bootstrap first."
+    exit 1
+  fi
+
+  cat > "$BACKEND_CONF" <<EOF
+bucket         = "$BUCKET_NAME"
+key            = "terraform.tfstate"
+region         = "$REGION"
+dynamodb_table = "$TABLE_NAME"
+encrypt        = true
+EOF
+
+  echo "backend.conf generated from bootstrap outputs."
 fi
+
+cd "$SCRIPT_DIR/../terraform"
 
 terraform init -backend-config="backend.conf"
 
