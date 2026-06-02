@@ -17,7 +17,6 @@ permissions:
 jobs:
   validate-lambdas:
     runs-on: ubuntu-latest
-    if: ${{ vars.PROJECT_NAME != '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,8 +38,9 @@ jobs:
 
   deploy-lambdas:
     needs: validate-lambdas
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PROJECT_NAME != ''
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

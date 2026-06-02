@@ -1,20 +1,34 @@
 #!/bin/bash
 set -e
 
+AWS_PROFILE_NAME="prod"
+ENVIRONMENT="prod"
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-BACKEND_CONF="$SCRIPT_DIR/../terraform/backend.conf"
+ENV_DIR="$SCRIPT_DIR/../terraform/environments/$ENVIRONMENT"
+BOOTSTRAP_DIR="$ENV_DIR/bootstrap"
+BACKEND_CONF="$ENV_DIR/backend.conf"
+
+export AWS_PROFILE="$AWS_PROFILE_NAME"
+
+echo "Verifying AWS identity for profile '$AWS_PROFILE_NAME'..."
+if ! IDENTITY=$(aws sts get-caller-identity --profile "$AWS_PROFILE_NAME" --output text 2>/dev/null); then
+  echo "ERROR: Could not verify AWS identity for profile '$AWS_PROFILE_NAME'. Run 'aws configure --profile $AWS_PROFILE_NAME' first."
+  exit 1
+fi
+echo "Authenticated: $IDENTITY"
 
 if [ ! -f "$BACKEND_CONF" ]; then
   echo "backend.conf not found. Reading values from bootstrap outputs..."
 
-  pushd "$SCRIPT_DIR/../terraform/bootstrap" > /dev/null
+  pushd "$BOOTSTRAP_DIR" > /dev/null
   BUCKET_NAME=$(terraform output -raw state_bucket_name)
   TABLE_NAME=$(terraform output -raw dynamodb_table_name)
   REGION=$(terraform output -raw aws_region)
   popd > /dev/null
 
   if [ -z "$BUCKET_NAME" ] || [ -z "$TABLE_NAME" ]; then
-    echo "ERROR: Could not read bootstrap outputs. Run 'terraform apply' in terraform/bootstrap first."
+    echo "ERROR: Could not read bootstrap outputs. Run 'terraform apply' in $BOOTSTRAP_DIR first."
     exit 1
   fi
 
@@ -29,7 +43,7 @@ EOF
   echo "backend.conf generated from bootstrap outputs."
 fi
 
-cd "$SCRIPT_DIR/../terraform"
+cd "$ENV_DIR"
 
 terraform init -backend-config="backend.conf"
 
@@ -37,7 +51,7 @@ terraform apply -auto-approve
 
 BRANCH=$(git -C "$SCRIPT_DIR/.." rev-parse --abbrev-ref HEAD)
 
-gh workflow run deploy-app.yml --ref "$BRANCH"
+gh workflow run deploy-app.yml --ref "$BRANCH" -f environment="$ENVIRONMENT"
 
 sleep 5
 

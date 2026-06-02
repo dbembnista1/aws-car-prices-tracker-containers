@@ -5,11 +5,11 @@ variable "project_name" {
 }
 
 variable "common_tags" {
-  description = "Common tags applied to all resources"
+  description = "Common tags applied to all resources. Environment is hardcoded per environment (this file lives only in environments/prod/bootstrap) and also drives the GitHub Environment name."
   type        = map(string)
   default = {
     Project     = "CarPrices"
-    Environment = "dev"
+    Environment = "prod"
     ManagedBy   = "Terraform"
   }
 }

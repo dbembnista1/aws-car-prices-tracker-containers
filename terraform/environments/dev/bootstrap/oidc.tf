@@ -35,21 +35,35 @@ resource "aws_iam_role" "github_actions_role" {
   })
 }
 
-# 4. Automatyczne wysłanie ARN tej roli jako Sekret do GitHuba
-resource "github_actions_secret" "aws_oidc_role_arn" {
-  # Opcjonalne: Używamy count, jeśli chcesz by to było przełączane
+# Nazwa GitHub Environment pokrywa się z tagiem Environment (prod/dev),
+# dzięki czemu bootstrap dev i prod różnią się wyłącznie wartością tfvars.
+locals {
+  github_environment = var.common_tags["Environment"]
+}
+
+# 4. GitHub Environment dla tego konta (izoluje sekrety/zmienne dev vs prod)
+resource "github_repository_environment" "this" {
+  count       = var.enable_github_secrets ? 1 : 0
+  repository  = var.github_repository
+  environment = local.github_environment
+}
+
+# 5. ARN roli OIDC jako sekret w GitHub Environment
+resource "github_actions_environment_secret" "aws_oidc_role_arn" {
   count = var.enable_github_secrets ? 1 : 0
 
   repository      = var.github_repository
+  environment     = github_repository_environment.this[0].environment
   secret_name     = "AWS_OIDC_ROLE_ARN"
   plaintext_value = aws_iam_role.github_actions_role.arn
 }
 
-# 5. Automatyczne wysłanie samego tokena jako Sekret (dla CI/CD)
-resource "github_actions_secret" "github_token" {
+# 6. Token GitHub jako sekret w GitHub Environment (używany przez terraform.yml)
+resource "github_actions_environment_secret" "github_token" {
   count = (var.enable_github_secrets && var.github_token != null) ? 1 : 0
 
   repository      = var.github_repository
+  environment     = github_repository_environment.this[0].environment
   secret_name     = "GH_PAT"
   plaintext_value = var.github_token
 }
