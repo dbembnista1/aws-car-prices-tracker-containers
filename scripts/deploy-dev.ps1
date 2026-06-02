@@ -1,12 +1,27 @@
 $ErrorActionPreference = 'Stop'
 
+$AwsProfile = "dev"
+$Environment = "dev"
+
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$BackendConf = "$ScriptDir\..\terraform\backend.conf"
+$EnvDir = "$ScriptDir\..\terraform\environments\$Environment"
+$BootstrapDir = "$EnvDir\bootstrap"
+$BackendConf = "$EnvDir\backend.conf"
+
+$env:AWS_PROFILE = $AwsProfile
+
+Write-Host "Verifying AWS identity for profile '$AwsProfile'..."
+$Identity = aws sts get-caller-identity --profile $AwsProfile --output json | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0 -or -not $Identity.Account) {
+  Write-Error "ERROR: Could not verify AWS identity for profile '$AwsProfile'. Run 'aws configure --profile $AwsProfile' first."
+  exit 1
+}
+Write-Host "Authenticated as $($Identity.Arn) (account $($Identity.Account))."
 
 if (-not (Test-Path $BackendConf)) {
   Write-Host "backend.conf not found. Reading values from bootstrap outputs..."
 
-  Push-Location "$ScriptDir\..\terraform\bootstrap"
+  Push-Location $BootstrapDir
   try {
     $Outputs = terraform output -json | ConvertFrom-Json
   } finally {
@@ -18,7 +33,7 @@ if (-not (Test-Path $BackendConf)) {
   $Region     = $Outputs.aws_region.value
 
   if (-not $BucketName -or -not $TableName) {
-    Write-Error "ERROR: Could not read bootstrap outputs. Run 'terraform apply' in terraform/bootstrap first."
+    Write-Error "ERROR: Could not read bootstrap outputs. Run 'terraform apply' in $BootstrapDir first."
     exit 1
   }
 
@@ -33,7 +48,7 @@ encrypt        = true
   Write-Host "backend.conf generated from bootstrap outputs."
 }
 
-Set-Location "$ScriptDir\..\terraform"
+Set-Location $EnvDir
 
 $env:TZ = "UTC"
 
@@ -47,7 +62,7 @@ if ($LASTEXITCODE -ne 0) {
 
 $Branch = git -C "$ScriptDir\.." rev-parse --abbrev-ref HEAD
 
-gh workflow run deploy-app.yml --ref $Branch
+gh workflow run deploy-app.yml --ref $Branch -f environment=$Environment
 
 Start-Sleep -Seconds 5
 

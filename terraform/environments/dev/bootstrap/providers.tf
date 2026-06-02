@@ -1,31 +1,30 @@
 terraform {
-  backend "s3" {}
-
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
     github = {
       source  = "integrations/github"
       version = "~> 6.0"
     }
-    time = {
-      source  = "hashicorp/time"
-      version = "~> 0.11"
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
     }
   }
 }
 
 provider "aws" {
-  region = "eu-central-1"
-}
+  region = var.aws_region
 
-variable "github_token" {
-  description = "GitHub token for managing repository resources"
-  type        = string
-  default     = null
-  sensitive   = true
+  default_tags {
+    tags = var.common_tags
+  }
 }
 
 provider "github" {

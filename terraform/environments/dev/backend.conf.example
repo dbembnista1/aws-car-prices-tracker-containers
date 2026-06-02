@@ -1,0 +1,9 @@
+# Backend DEV - bucket stanu jest TWORZONY przez environments/dev/bootstrap
+# (nazwa ma losowy suffix, znana dopiero po apply). Skopiuj do backend.conf
+# i uzupelnij realnymi wartosciami, albo pozwol skryptowi deploy-dev wygenerowac
+# backend.conf z outputow environments/dev/bootstrap.
+bucket         = "car-prices-terraform-state-XXXXXX"
+key            = "terraform.tfstate"
+region         = "eu-central-1"
+dynamodb_table = "car-prices-terraform-locks"
+encrypt        = true

@@ -19,9 +19,10 @@ permissions:
 jobs:
   terraform:
     runs-on: ubuntu-latest
+    environment: prod
     defaults:
       run:
-        working-directory: ./terraform
+        working-directory: ./terraform/environments/prod
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

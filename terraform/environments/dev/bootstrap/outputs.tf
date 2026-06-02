@@ -16,3 +16,8 @@ output "github_actions_role_arn" {
   value       = aws_iam_role.github_actions_role.arn
   description = "ARN of the IAM Role used by GitHub Actions"
 }
+
+output "github_environment" {
+  value       = local.github_environment
+  description = "Name of the GitHub Environment scoping secrets/variables for this account"
+}

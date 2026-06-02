@@ -1,0 +1,16 @@
+# Bootstrap konta DEV - skopiuj do terraform.tfvars i uzupelnij.
+# terraform.tfvars jest w .gitignore (nie commituj sekretow).
+# Stawiane recznie raz, z profilem dev: terraform apply (AWS_PROFILE=dev).
+
+project_name          = "car-prices"
+aws_region            = "eu-central-1"
+enable_github_secrets = true
+github_owner          = "your-github-username"
+github_repository     = "your-repo-name"
+
+# Token przekazuj przez zmienna srodowiskowa zamiast pliku:
+#   PowerShell: $env:TF_VAR_github_token = "ghp_..."
+#   bash:       export TF_VAR_github_token="ghp_..."
+
+# Environment (a tym samym nazwa GitHub Environment = "dev") pochodzi z
+# domyslnej wartosci common_tags w variables.tf.

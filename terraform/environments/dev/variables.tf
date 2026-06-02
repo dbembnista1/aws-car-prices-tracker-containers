@@ -5,7 +5,7 @@ variable "project_name" {
 }
 
 variable "common_tags" {
-  description = "Common tags applied to all resources"
+  description = "Common tags applied to all resources. Environment is hardcoded per environment (this file lives only in environments/dev)."
   type        = map(string)
   default = {
     Project     = "CarPrices"
