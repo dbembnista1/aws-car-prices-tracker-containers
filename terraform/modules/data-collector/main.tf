@@ -2,7 +2,7 @@
 
 data "archive_file" "collector_zip" {
   type        = "zip"
-  source_file = "${path.root}/../src/lambdas/data_collector.py"
+  source_file = "${path.module}/../../../src/lambdas/data_collector.py"
   output_path = "${path.root}/.terraform/collector.zip"
 }
 

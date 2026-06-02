@@ -48,7 +48,7 @@ resource "aws_iam_role_policy" "collector_sns_publish" {
 # Package Formatting Lambda code
 data "archive_file" "formatter_zip" {
   type        = "zip"
-  source_file = "${path.root}/../src/lambdas/email_formatting.py"
+  source_file = "${path.module}/../../../src/lambdas/email_formatting.py"
   output_path = "${path.root}/.terraform/formatter.zip"
 }
 

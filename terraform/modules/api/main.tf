@@ -1,13 +1,13 @@
 # packages for lambdas
 data "archive_file" "find_models_zip" {
   type        = "zip"
-  source_file = "${path.root}/../src/lambdas/api_find_models.py"
+  source_file = "${path.module}/../../../src/lambdas/api_find_models.py"
   output_path = "${path.root}/.terraform/find_models.zip"
 }
 
 data "archive_file" "get_prices_zip" {
   type        = "zip"
-  source_file = "${path.root}/../src/lambdas/api_get_prices_by_model.py"
+  source_file = "${path.module}/../../../src/lambdas/api_get_prices_by_model.py"
   output_path = "${path.root}/.terraform/get_prices.zip"
 
 }
