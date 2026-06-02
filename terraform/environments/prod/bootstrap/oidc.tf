@@ -68,6 +68,25 @@ resource "github_actions_environment_secret" "github_token" {
   plaintext_value = var.github_token
 }
 
+# 7. Backend state — nazwy z bootstrap (suffix losowy), używane przez terraform.yml w CI
+resource "github_actions_environment_variable" "tf_state_bucket" {
+  count = var.enable_github_secrets ? 1 : 0
+
+  repository    = var.github_repository
+  environment   = github_repository_environment.this[0].environment
+  variable_name = "TF_STATE_BUCKET"
+  value         = aws_s3_bucket.terraform_state.bucket
+}
+
+resource "github_actions_environment_variable" "tf_state_dynamodb_table" {
+  count = var.enable_github_secrets ? 1 : 0
+
+  repository    = var.github_repository
+  environment   = github_repository_environment.this[0].environment
+  variable_name = "TF_STATE_DYNAMODB_TABLE"
+  value         = aws_dynamodb_table.terraform_locks.name
+}
+
 resource "aws_iam_role_policy_attachment" "github_actions_admin" {
   role       = aws_iam_role.github_actions_role.name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
