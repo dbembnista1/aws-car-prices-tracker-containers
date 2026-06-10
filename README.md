@@ -52,13 +52,63 @@ All workflows authenticate to AWS via **OIDC** — no long-lived access keys in 
 
 Dev and prod run in **separate AWS accounts** with isolated Terraform state. Each environment follows the same three phases: **bootstrap** (once per account) → **configure** → **deploy**.
 
-**Shared prerequisites:**
+### Repository layout (dev / prod separation)
+
+```
+terraform/
+├── modules/                         # Shared IaC — identical for dev and prod
+│   ├── network/
+│   ├── ecs/
+│   ├── api/
+│   └── ...
+│
+└── environments/
+    ├── dev/                         # AWS account: dev  |  AWS CLI profile: dev  |  GitHub Environment: dev
+    │   ├── bootstrap/               
+    │   │   └── terraform.tfvars.example
+    │   ├── main.tf                
+    │   ├── terraform.tfvars.example
+    │   └── backend.conf           
+    │
+    └── prod/                        # AWS account: prod  |  AWS CLI profile: prod  |  GitHub Environment: prod
+        ├── bootstrap/
+        │   └── terraform.tfvars.example
+        ├── main.tf
+        ├── terraform.tfvars.example
+        └── backend.conf
+
+scripts/
+├── deploy-dev.ps1 / deploy-dev.sh   # Dev deploy scripts
+└── deploy-prod.ps1 / deploy-prod.sh # Prod deploy scripts
+```
+
+No shared state bucket or cross-account access — each side has its own bootstrap, backend, and AWS account.
+
+### Get your own copy
+
+Bootstrap configures OIDC trust for a **specific GitHub repository**. To deploy under your own AWS accounts, run the project from **your** repo (one repo shared by dev and prod — separation is by AWS account, not by repository).
+
+**1. Create an empty repository on GitHub** (no README, no `.gitignore` — avoid merge conflicts).
+
+**2. Clone this project and push it to your remote:**
+
+```bash
+git clone https://github.com/dbembnista1/project1-car-prices-terraform-containers.git
+cd project1-car-prices-terraform-containers
+git remote set-url origin https://github.com/YOUR_USER/YOUR_REPO.git
+git push -u origin main
+```
+
+Alternatively: **Fork** this repository on GitHub and clone your fork.
+
+
+### Prerequisites
 * [Terraform](https://www.terraform.io/downloads.html), [AWS CLI](https://aws.amazon.com/cli/), and [GitHub CLI](https://cli.github.com/) (`gh`)
 * A **GitHub PAT** with `repo` scope (passed as `TF_VAR_github_token`, never committed)
 
 ---
 
-### Dev environment (end-to-end)
+### Dev environment
 
 Local-only infrastructure — Terraform is **not** applied by GitHub Actions for dev.
 
@@ -68,12 +118,12 @@ Local-only infrastructure — Terraform is **not** applied by GitHub Actions for
 aws configure --profile dev
 ```
 
-**2. Bootstrap** (once per dev account)
+**2. Bootstrap**
 
 Creates S3 state bucket, DynamoDB lock table, OIDC role, and GitHub Environment `dev`.
 
 ```bash
-export TF_VAR_github_token="ghp_..."   # PowerShell: $env:TF_VAR_github_token = "ghp_..."
+$env:TF_VAR_github_token = "your-gh-token"
 
 cd terraform/environments/dev/bootstrap
 cp terraform.tfvars.example terraform.tfvars   # set github_owner, github_repository
@@ -93,20 +143,28 @@ cp terraform.tfvars.example terraform.tfvars   # set github_owner, github_reposi
 Orchestrates `terraform apply`, builds the Docker image via GitHub Actions (`workflow_dispatch` → dev), and rolls out ECS:
 
 ```bash
+$env:TF_VAR_github_token = "your-gh-token"
+
 ./scripts/deploy-dev.ps1    # Windows
 ./scripts/deploy-dev.sh     # Linux/macOS
 ```
 
 The script prints the CloudFront URL when finished.
 
-**5. Day-to-day updates**
+**5. Ongoing management**
 
-* Terraform changes: `cd terraform/environments/dev` → `terraform plan` / `terraform apply`
-* App code only: `gh workflow run deploy-app.yml -f environment=dev`
+Re-run the deploy script to apply infrastructure changes and roll out the app:
+
+```bash
+$env:TF_VAR_github_token = "your-gh-token"
+
+./scripts/deploy-dev.ps1    # Windows
+./scripts/deploy-dev.sh     # Linux/macOS
+```
 
 ---
 
-### Prod environment (end-to-end)
+### Prod environment
 
 **1. AWS credentials**
 
@@ -114,15 +172,15 @@ The script prints the CloudFront URL when finished.
 aws configure --profile prod
 ```
 
-**2. Bootstrap** (once per prod account)
+**2. Bootstrap**
 
 Creates S3 state bucket, DynamoDB lock table, OIDC role, and GitHub Environment `prod`.
 
 ```bash
-export TF_VAR_github_token="ghp_..."
+$env:TF_VAR_github_token = "your-gh-token"
 
 cd terraform/environments/prod/bootstrap
-cp terraform.tfvars.example terraform.tfvars
+cp terraform.tfvars.example terraform.tfvars   # set github_owner, github_repository
 terraform init
 terraform apply
 ```
@@ -131,37 +189,48 @@ terraform apply
 
 ```bash
 cd ../
-cp terraform.tfvars.example terraform.tfvars
+cp terraform.tfvars.example terraform.tfvars   # set github_owner, github_repository; optional features
 ```
 
 **4. Deploy**
 
-**Option A — full local deploy** (same flow as dev):
+Orchestrates `terraform apply`, builds the Docker image via GitHub Actions (`workflow_dispatch` → prod), and rolls out ECS:
 
 ```bash
-./scripts/deploy-prod.ps1
-./scripts/deploy-prod.sh
+$env:TF_VAR_github_token = "your-gh-token"
+
+./scripts/deploy-prod.ps1    # Windows
+./scripts/deploy-prod.sh     # Linux/macOS
 ```
 
-**Option B — team workflow via GitHub Actions** (recommended for prod):
+The script prints the CloudFront URL when finished.
 
-1. Create a branch and open a Pull Request.
-2. `terraform.yml` runs `plan` and posts the result as a PR comment.
-3. Merge to `main` — `terraform apply` runs automatically; app and Lambda workflows deploy when relevant paths change.
+**5. Ongoing management**
 
-> Until bootstrap is applied, disable the **Terraform CI/CD** workflow in GitHub Actions to avoid failed runs on merge.
+* Team collaboration (CI/CD): create a branch → open a PR to `main` → `terraform.yml` posts a plan comment → merge triggers `terraform apply` and deploys Lambdas/app when `terraform/**`, `src/lambdas/**`, or `src/express/**` change
+* Local deploy:
+
+```bash
+$env:TF_VAR_github_token = "your-gh-token"
+
+./scripts/deploy-prod.ps1    # Windows
+./scripts/deploy-prod.sh     # Linux/macOS
+```
+
 
 ---
 
 ### Destroy behaviour
 
-`terraform destroy` on the main stack removes application resources (ECS, DynamoDB, API Gateway, etc.) but **leaves bootstrap intact** (S3, DynamoDB locks, OIDC). GitHub Actions can rebuild prod from the next push to `main`.
+`terraform destroy` on the main stack removes application resources (ECS, DynamoDB, API Gateway, etc.) but **leaves bootstrap intact** (S3, DynamoDB locks, OIDC). After a destroy, prod can be rebuilt via CI/CD on the next merge to `main` (or by running the deploy script again).
 
 ## 🧹 Cleanup
 
 ### Dev
 
-```bash
+```powershell
+$env:TF_VAR_github_token = "your-gh-token"
+
 # Remove application resources (bootstrap stays)
 cd terraform/environments/dev
 terraform destroy
@@ -173,7 +242,9 @@ terraform destroy
 
 ### Prod
 
-```bash
+```powershell
+$env:TF_VAR_github_token = "your-gh-token"
+
 # Remove application resources (bootstrap stays)
 cd terraform/environments/prod
 terraform destroy
