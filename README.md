@@ -24,7 +24,7 @@ The system is divided into three main logical components:
 The project includes three GitHub Actions workflows that sync code and infrastructure with AWS:
 
 * **Terraform CI/CD** (`terraform.yml`): On every PR to `main` — `fmt`, `validate`, and `plan` (with results posted as a PR comment). On merge to `main` — automatic `terraform apply` for the **prod** environment. Dev infrastructure is applied locally (see Setup below).
-* **Lambda CI/CD** (`update-lambdas.yml`): Lints Python code on PR; deploys changed Lambda functions to **prod** after merge to `main`.
+* **Lambda CI/CD** (`update-lambdas.yml`): Checks Python code for syntax errors on PR; deploys changed Lambda functions to **prod** after merge to `main`.
 * **App CI/CD** (`deploy-app.yml`): Builds the Docker image and pushes it to **ECR** on PR/push. Rolls out a new ECS deployment on merge to `main` (prod) or via manual `workflow_dispatch` (dev or prod).
 
 All workflows authenticate to AWS via **OIDC** — no long-lived access keys in GitHub Secrets. Bootstrap resources (S3 state bucket, DynamoDB lock table, OIDC IAM role) live outside the main stack and survive `terraform destroy`, so CI/CD can always rebuild the environment.
@@ -50,67 +50,136 @@ All workflows authenticate to AWS via **OIDC** — no long-lived access keys in 
 
 ## 🚀 Setup & Deployment
 
-This project uses a separated state lifecycle to ensure safe CI/CD deployments and seamless team collaboration.
+Dev and prod run in **separate AWS accounts** with isolated Terraform state. Each environment follows the same three phases: **bootstrap** (once per account) → **configure** → **deploy**.
 
-### 1. Initialization (Admin / DevOps) — do this once per AWS account
+**Shared prerequisites:**
+* [Terraform](https://www.terraform.io/downloads.html), [AWS CLI](https://aws.amazon.com/cli/), and [GitHub CLI](https://cli.github.com/) (`gh`)
+* A **GitHub PAT** with `repo` scope (passed as `TF_VAR_github_token`, never committed)
 
-The **Bootstrap** phase creates the immutable foundation: S3 bucket for Terraform state, DynamoDB table for state locking, GitHub OIDC IAM role, and GitHub Environment secrets/variables. Bootstrap is applied manually and is never destroyed during normal operations.
+---
 
-**Prerequisites:**
-* [Terraform](https://www.terraform.io/downloads.html) installed locally.
-* An AWS account with configured AWS CLI (`aws configure --profile dev` or `--profile prod`).
-* **GitHub Personal Access Token (PAT)** with `repo` scope: `export TF_VAR_github_token=your_token_here`.
+### Dev environment (end-to-end)
+
+Local-only infrastructure — Terraform is **not** applied by GitHub Actions for dev.
+
+**1. AWS credentials**
 
 ```bash
-cd terraform/environments/prod/bootstrap   # or dev/bootstrap
-cp terraform.tfvars.example terraform.tfvars   # customize values
+aws configure --profile dev
+```
+
+**2. Bootstrap** (once per dev account)
+
+Creates S3 state bucket, DynamoDB lock table, OIDC role, and GitHub Environment `dev`.
+
+```bash
+export TF_VAR_github_token="ghp_..."   # PowerShell: $env:TF_VAR_github_token = "ghp_..."
+
+cd terraform/environments/dev/bootstrap
+cp terraform.tfvars.example terraform.tfvars   # set github_owner, github_repository
 terraform init
 terraform apply
 ```
 
-### 2. Infrastructure Configuration
+**3. Main stack configuration**
 
 ```bash
-cd terraform/environments/prod   # or dev
-cp terraform.tfvars.example terraform.tfvars   # customize values
+cd ../
+cp terraform.tfvars.example terraform.tfvars   # set github_owner, github_repository; optional features
 ```
 
-### 3. Deploy to AWS
+**4. Deploy**
 
+Orchestrates `terraform apply`, builds the Docker image via GitHub Actions (`workflow_dispatch` → dev), and rolls out ECS:
 
-**Dev (local apply):**
 ```bash
 ./scripts/deploy-dev.ps1    # Windows
 ./scripts/deploy-dev.sh     # Linux/macOS
 ```
 
-**Prod (local apply):**
+The script prints the CloudFront URL when finished.
+
+**5. Day-to-day updates**
+
+* Terraform changes: `cd terraform/environments/dev` → `terraform plan` / `terraform apply`
+* App code only: `gh workflow run deploy-app.yml -f environment=dev`
+
+---
+
+### Prod environment (end-to-end)
+
+**1. AWS credentials**
+
 ```bash
-./scripts/deploy-prod.ps1    # Windows
-./scripts/deploy-prod.sh     # Linux/macOS
+aws configure --profile prod
 ```
 
-After running deploy scrips you can manage your deployment locally with terraform commands or use proper teamwork CICD setup:
+**2. Bootstrap** (once per prod account)
 
-**Prod (teamwork prod scenario):**
+Creates S3 state bucket, DynamoDB lock table, OIDC role, and GitHub Environment `prod`.
+
+```bash
+export TF_VAR_github_token="ghp_..."
+
+cd terraform/environments/prod/bootstrap
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform apply
+```
+
+**3. Main stack configuration**
+
+```bash
+cd ../
+cp terraform.tfvars.example terraform.tfvars
+```
+
+**4. Deploy**
+
+**Option A — full local deploy** (same flow as dev):
+
+```bash
+./scripts/deploy-prod.ps1
+./scripts/deploy-prod.sh
+```
+
+**Option B — team workflow via GitHub Actions** (recommended for prod):
+
 1. Create a branch and open a Pull Request.
-2. GitHub Actions runs `terraform plan` and posts the result as a PR comment.
-3. Merge to `main` — `terraform apply` runs automatically, followed by app and Lambda deploys when relevant paths change.
+2. `terraform.yml` runs `plan` and posts the result as a PR comment.
+3. Merge to `main` — `terraform apply` runs automatically; app and Lambda workflows deploy when relevant paths change.
 
+> Until bootstrap is applied, disable the **Terraform CI/CD** workflow in GitHub Actions to avoid failed runs on merge.
 
-If you run `terraform destroy` on the main infrastructure, it removes all application resources (ECS, DynamoDB, API Gateway, etc.) **except** Bootstrap (S3, DynamoDB locks, OIDC). GitHub Actions retains AWS access and can rebuild everything on the next push to `main`.
+---
+
+### Destroy behaviour
+
+`terraform destroy` on the main stack removes application resources (ECS, DynamoDB, API Gateway, etc.) but **leaves bootstrap intact** (S3, DynamoDB locks, OIDC). GitHub Actions can rebuild prod from the next push to `main`.
 
 ## 🧹 Cleanup
 
-To remove all application resources and stop AWS charges (Bootstrap stays intact):
+### Dev
+
 ```bash
-cd terraform/environments/prod   # or dev
+# Remove application resources (bootstrap stays)
+cd terraform/environments/dev
+terraform destroy
+
+# Full teardown including remote state and OIDC (disables CI/CD for dev)
+cd bootstrap
 terraform destroy
 ```
 
-To fully tear down an environment including remote state and OIDC (disables CI/CD for that account):
+### Prod
+
 ```bash
-cd terraform/environments/prod/bootstrap   # or dev/bootstrap
+# Remove application resources (bootstrap stays)
+cd terraform/environments/prod
+terraform destroy
+
+# Full teardown including remote state and OIDC (disables CI/CD for prod)
+cd bootstrap
 terraform destroy
 ```
 
