@@ -2,9 +2,7 @@
 
 Project created out of curiosity to check if prices for cars manufactured in specific year are getting lower with time or the inflation/quality keep the price high.
 
-It became a full-stack cloud application built on AWS to automatically collect, store, and visualize car prices over time. The entire infrastructure is managed as Code (IaC) using **Terraform** and features automated CI/CD pipelines via **GitHub Actions**.
-
-This repository is an **evolution of the original [aws-car-prices-tracker](https://github.com/dbembnista1/aws-car-prices-tracker)** project. The core application logic (scraping, API, charts) stays the same — the focus here is on cloud engineering improvements: containerized web on **ECS Fargate** (replacing EC2), remote Terraform state, OIDC-based CI/CD, and separate **dev/prod** AWS accounts.
+This repository is an **evolution of the original [aws-car-prices-tracker](https://github.com/dbembnista1/aws-car-prices-tracker)** project. The core application logic (scraping, API, charts) stays the same — the focus here is on cloud engineering improvements: containerized web on **ECS Fargate** (replacing EC2 and also intruducing CloudFront and ALB), remote Terraform state, and separate **dev/prod** AWS accounts. CI/CD has also been improved to trigger on pull requests on main branch.
 <br><br><br>
 <p align="center">
 (click to enlarge)
@@ -99,10 +97,6 @@ subscriber_email      = "your.email@example.com"
 
 ### 3. Deploy to AWS
 
-**Prod (CI/CD — no local AWS keys needed for day-to-day work):**
-1. Create a branch and open a Pull Request.
-2. GitHub Actions runs `terraform plan` and posts the result as a PR comment.
-3. Merge to `main` — `terraform apply` runs automatically, followed by app and Lambda deploys when relevant paths change.
 
 **Dev (local apply):**
 ```bash
@@ -110,11 +104,19 @@ subscriber_email      = "your.email@example.com"
 ./scripts/deploy-dev.sh     # Linux/macOS
 ```
 
-**Prod (full local orchestration — optional):**
+**Prod (local apply):**
 ```bash
 ./scripts/deploy-prod.ps1
 ./scripts/deploy-prod.sh
 ```
+
+After running deploy scrips you can manage your deployment locally with terraform commands or use proper teamwork CICD setup:
+
+**Prod (teamwork prod scenario):**
+1. Create a branch and open a Pull Request.
+2. GitHub Actions runs `terraform plan` and posts the result as a PR comment.
+3. Merge to `main` — `terraform apply` runs automatically, followed by app and Lambda deploys when relevant paths change.
+
 
 If you run `terraform destroy` on the main infrastructure, it removes all application resources (ECS, DynamoDB, API Gateway, etc.) **except** Bootstrap (S3, DynamoDB locks, OIDC). GitHub Actions retains AWS access and can rebuild everything on the next push to `main`.
 
