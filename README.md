@@ -70,16 +70,9 @@ terraform apply
 
 ### 2. Infrastructure Configuration
 
-Create a `terraform.tfvars` file in the target environment directory (`terraform/environments/prod/` or `terraform/environments/dev/`):
-
-```hcl
-github_owner          = "your-github-username"
-github_repository     = "your-repo-name"
-
-# Optional:
-# subscriber_email      = "your.email@example.com"
-# enable_data_collector = true
-# collector_urls        = "https://link1.com,https://link2.com"
+```bash
+cd terraform/environments/prod   # or dev
+cp terraform.tfvars.example terraform.tfvars   # customize values
 ```
 
 ### 3. Deploy to AWS

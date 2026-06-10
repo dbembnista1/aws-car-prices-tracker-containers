@@ -20,12 +20,6 @@ variable "aws_region" {
   default     = "eu-central-1"
 }
 
-variable "enable_github_secrets" {
-  description = "Set to true to automatically configure CICD for infra (OICD connection to AWS needed) using GitHub Actions Secrets"
-  type        = bool
-  default     = false
-}
-
 variable "github_repository" {
   description = "Name of the GitHub repository for secrets injection"
   type        = string

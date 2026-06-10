@@ -1,15 +1,15 @@
-# Bootstrap konta PROD - skopiuj do terraform.tfvars i uzupelnij.
-# terraform.tfvars jest w .gitignore (nie commituj sekretow).
-# Stawiane recznie raz, z profilem prod: terraform apply (AWS_PROFILE=prod).
+# PROD account bootstrap — copy to terraform.tfvars and fill in values.
+# terraform.tfvars is in .gitignore (do not commit secrets).
+# Apply manually once. The AWS provider enforces profile "prod" (see providers.tf).
 
 project_name      = "car-prices"
 aws_region        = "eu-central-1"
 github_owner      = "your-github-username"
-github_repository     = "your-repo-name"
+github_repository = "your-repo-name"
 
-# Token przekazuj przez zmienna srodowiskowa zamiast pliku:
+# Pass the token via environment variable instead of a file:
 #   PowerShell: $env:TF_VAR_github_token = "ghp_..."
 #   bash:       export TF_VAR_github_token="ghp_..."
 
-# Environment (a tym samym nazwa GitHub Environment = "prod") pochodzi z
-# domyslnej wartosci common_tags w variables.tf - nadpisuj tylko jesli wiesz po co.
+# Environment (and thus the GitHub Environment name = "prod") comes from the
+# default common_tags value in variables.tf. Override only if you know why.

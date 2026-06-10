@@ -1,0 +1,15 @@
+# PROD main stack — copy to terraform.tfvars and fill in values.
+# terraform.tfvars is in .gitignore (do not commit secrets).
+#
+# For local apply, the GitHub provider also needs a PAT:
+#   PowerShell: $env:TF_VAR_github_token = "ghp_..."
+#   bash:       export TF_VAR_github_token="ghp_..."
+
+project_name      = "car-prices"
+github_owner      = "your-github-username"
+github_repository = "your-repo-name"
+
+# Optional:
+# enable_data_collector = true
+# collector_urls        = "https://url1.com,https://url2.com"
+# subscriber_email      = "your.email@example.com"

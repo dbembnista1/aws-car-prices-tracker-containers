@@ -1,7 +1,7 @@
-# Backend PROD - bucket stanu jest TWORZONY przez environments/prod/bootstrap
-# (nazwa ma losowy suffix, znana dopiero po apply). Skopiuj do backend.conf
-# i uzupelnij realnymi wartosciami, albo pozwol skryptowi deploy-prod wygenerowac
-# backend.conf z outputow environments/prod/bootstrap.
+# PROD backend — the state bucket is CREATED by environments/prod/bootstrap
+# (name includes a random suffix, known only after apply). Copy to backend.conf
+# and fill in real values, or let deploy-prod generate backend.conf from
+# environments/prod/bootstrap outputs.
 bucket         = "car-prices-terraform-state-XXXXXX"
 key            = "terraform.tfstate"
 region         = "eu-central-1"
