@@ -43,46 +43,39 @@ locals {
 
 # 4. GitHub Environment dla tego konta (izoluje sekrety/zmienne dev vs prod)
 resource "github_repository_environment" "this" {
-  count       = var.enable_github_secrets ? 1 : 0
   repository  = var.github_repository
   environment = local.github_environment
 }
 
 # 5. ARN roli OIDC jako sekret w GitHub Environment
 resource "github_actions_environment_secret" "aws_oidc_role_arn" {
-  count = var.enable_github_secrets ? 1 : 0
-
   repository      = var.github_repository
-  environment     = github_repository_environment.this[0].environment
+  environment     = github_repository_environment.this.environment
   secret_name     = "AWS_OIDC_ROLE_ARN"
   plaintext_value = aws_iam_role.github_actions_role.arn
 }
 
 # 6. Token GitHub jako sekret w GitHub Environment (używany przez terraform.yml)
 resource "github_actions_environment_secret" "github_token" {
-  count = (var.enable_github_secrets && var.github_token != null) ? 1 : 0
+  count = var.github_token != null ? 1 : 0
 
   repository      = var.github_repository
-  environment     = github_repository_environment.this[0].environment
+  environment     = github_repository_environment.this.environment
   secret_name     = "GH_PAT"
   plaintext_value = var.github_token
 }
 
 # 7. Backend state — nazwy z bootstrap (suffix losowy), na wypadek przyszłego CI dla dev
 resource "github_actions_environment_variable" "tf_state_bucket" {
-  count = var.enable_github_secrets ? 1 : 0
-
   repository    = var.github_repository
-  environment   = github_repository_environment.this[0].environment
+  environment   = github_repository_environment.this.environment
   variable_name = "TF_STATE_BUCKET"
   value         = aws_s3_bucket.terraform_state.bucket
 }
 
 resource "github_actions_environment_variable" "tf_state_dynamodb_table" {
-  count = var.enable_github_secrets ? 1 : 0
-
   repository    = var.github_repository
-  environment   = github_repository_environment.this[0].environment
+  environment   = github_repository_environment.this.environment
   variable_name = "TF_STATE_DYNAMODB_TABLE"
   value         = aws_dynamodb_table.terraform_locks.name
 }
