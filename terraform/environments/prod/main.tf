@@ -75,7 +75,6 @@ locals {
 }
 
 resource "github_actions_environment_variable" "project_name" {
-  count         = var.enable_github_secrets ? 1 : 0
   repository    = var.github_repository
   environment   = local.github_environment
   variable_name = "PROJECT_NAME"
@@ -83,7 +82,6 @@ resource "github_actions_environment_variable" "project_name" {
 }
 
 resource "github_actions_environment_variable" "cognito_domain" {
-  count         = var.enable_github_secrets ? 1 : 0
   repository    = var.github_repository
   environment   = local.github_environment
   variable_name = "COGNITO_DOMAIN"
@@ -91,7 +89,6 @@ resource "github_actions_environment_variable" "cognito_domain" {
 }
 
 resource "github_actions_environment_variable" "cognito_client_id" {
-  count         = var.enable_github_secrets ? 1 : 0
   repository    = var.github_repository
   environment   = local.github_environment
   variable_name = "COGNITO_CLIENT_ID"
@@ -99,7 +96,6 @@ resource "github_actions_environment_variable" "cognito_client_id" {
 }
 
 resource "github_actions_environment_variable" "api_base_url" {
-  count         = var.enable_github_secrets ? 1 : 0
   repository    = var.github_repository
   environment   = local.github_environment
   variable_name = "API_BASE_URL"
@@ -107,7 +103,6 @@ resource "github_actions_environment_variable" "api_base_url" {
 }
 
 resource "github_actions_environment_variable" "ecr_repository_url" {
-  count         = var.enable_github_secrets ? 1 : 0
   repository    = var.github_repository
   environment   = local.github_environment
   variable_name = "ECR_REPOSITORY_URL"
@@ -115,7 +110,6 @@ resource "github_actions_environment_variable" "ecr_repository_url" {
 }
 
 resource "github_actions_environment_variable" "ecs_cluster_name" {
-  count         = var.enable_github_secrets ? 1 : 0
   repository    = var.github_repository
   environment   = local.github_environment
   variable_name = "ECS_CLUSTER_NAME"
@@ -123,7 +117,6 @@ resource "github_actions_environment_variable" "ecs_cluster_name" {
 }
 
 resource "github_actions_environment_variable" "ecs_service_name" {
-  count         = var.enable_github_secrets ? 1 : 0
   repository    = var.github_repository
   environment   = local.github_environment
   variable_name = "ECS_SERVICE_NAME"

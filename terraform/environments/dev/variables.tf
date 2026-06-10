@@ -13,20 +13,14 @@ variable "common_tags" {
     ManagedBy   = "Terraform"
   }
 }
-variable "enable_github_secrets" {
-  description = "Set to true to automatically configure CICD for web server code (EC2 IP and SSH Key needed) and configure CICD for infra (OICD connection to AWS needed) using GitHub Actions Secrets"
-  type        = bool
-  default     = false
-}
-
 variable "github_repository" {
-  description = "Name of the GitHub repository for secrets injection"
+  description = "Name of the GitHub repository for GitHub Actions environment variables"
   type        = string
   default     = ""
 }
 
 variable "github_owner" {
-  description = "GitHub username or organization owning the repository"
+  description = "GitHub username or organization owning the repository (used by the GitHub provider)"
   type        = string
   default     = ""
 }
