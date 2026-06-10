@@ -73,19 +73,13 @@ terraform apply
 Create a `terraform.tfvars` file in the target environment directory (`terraform/environments/prod/` or `terraform/environments/dev/`):
 
 ```hcl
-project_name = "car-prices"
-
-# 1. Enable GitHub Actions CI/CD (requires bootstrap OIDC setup)
-enable_github_secrets = true
 github_owner          = "your-github-username"
 github_repository     = "your-repo-name"
 
-# 2. Enable Daily Data Collection
-enable_data_collector = true
-collector_urls        = "https://url1.com,https://url2.com,https://url3.com"
-
-# 3. Enable Email Notifications (leave empty to disable)
-subscriber_email      = "your.email@example.com"
+# Optional:
+# subscriber_email      = "your.email@example.com"
+# enable_data_collector = true
+# collector_urls        = "https://link1.com,https://link2.com"
 ```
 
 ### 3. Deploy to AWS
