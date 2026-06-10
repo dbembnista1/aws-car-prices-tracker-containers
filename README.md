@@ -1,16 +1,9 @@
-# 🚗 Car Prices Tracker
+# 🚗 Car Prices Tracker - containerized
 
 Project created out of curiosity to check if prices for cars manufactured in specific year are getting lower with time or the inflation/quality keep the price high.
 
-This repository is an **evolution of the original [aws-car-prices-tracker](https://github.com/dbembnista1/aws-car-prices-tracker)** project. The core application logic (scraping, API, charts) stays the same — the focus here is on cloud engineering improvements: containerized web on **ECS Fargate** (replacing EC2 and also intruducing CloudFront and ALB), remote Terraform state, and separate **dev/prod** AWS accounts. CI/CD has also been improved to trigger on pull requests on main branch.
-<br><br><br>
-<p align="center">
-(click to enlarge)
-</p>
+This repository is an **evolution of the original [aws-car-prices-tracker](https://github.com/dbembnista1/aws-car-prices-tracker)** project. The core application logic (scraping, API, charts) stays the same — the focus here is on cloud engineering improvements: containerized web on **ECS Fargate** (replacing EC2 and also intruducing CloudFront and ALB), CI/CD including Terraform code changes (triggered on PR), remote Terraform state, and **dev/prod** separation using separate AWS accounts, state files and folder structure.
 
-<p align="center">
-<img width="480" height="270" alt="gif-slow" src="https://github.com/user-attachments/assets/5597b913-358f-4a64-b0ae-7e141be6277c" />
-</p>
 
 ## 🏗️ Architecture Overview
 
@@ -22,7 +15,7 @@ The system is divided into three main logical components:
 
 <br><br>
 <p align="center">
-<img width="1763" height="1269" alt="aws architecture" src="https://github.com/user-attachments/assets/5573ae41-ce25-48d3-ad8a-12930c3cec5a" />
+<img width="1829" height="1327" alt="aws arch containers drawio" src="https://github.com/user-attachments/assets/7c382a6b-35bc-404f-87c3-548dd0f73431" />
 </p>
 <br>
 
@@ -55,7 +48,7 @@ All workflows authenticate to AWS via **OIDC** — no long-lived access keys in 
 
 ---
 
-## 🚀 Setup & Deployment (Admin vs Team Workflow)
+## 🚀 Setup & Deployment
 
 This project uses a separated state lifecycle to ensure safe CI/CD deployments and seamless team collaboration.
 
@@ -106,8 +99,8 @@ subscriber_email      = "your.email@example.com"
 
 **Prod (local apply):**
 ```bash
-./scripts/deploy-prod.ps1
-./scripts/deploy-prod.sh
+./scripts/deploy-prod.ps1    # Windows
+./scripts/deploy-prod.sh     # Linux/macOS
 ```
 
 After running deploy scrips you can manage your deployment locally with terraform commands or use proper teamwork CICD setup:
