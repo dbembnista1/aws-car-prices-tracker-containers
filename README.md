@@ -68,7 +68,7 @@ terraform init
 terraform apply
 ```
 
-### 2. Infrastructure Configuration (Optional)
+### 2. Infrastructure Configuration
 
 Create a `terraform.tfvars` file in the target environment directory (`terraform/environments/prod/` or `terraform/environments/dev/`):
 
