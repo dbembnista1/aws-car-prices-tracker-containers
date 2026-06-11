@@ -6,7 +6,8 @@ resource "random_string" "suffix" {
 
 # S3 Bucket for Terraform State
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "${var.project_name}-terraform-state-${random_string.suffix.result}"
+  bucket        = "${var.project_name}-terraform-state-${random_string.suffix.result}"
+  force_destroy = true
 
   # To prevent accidental deletion of the state bucket
   lifecycle {
