@@ -20,8 +20,6 @@ npm-debug.log*
 .env
 .env.*
 
-# Cursor
-.cursor/
 
 # Markdown files
 *.md
