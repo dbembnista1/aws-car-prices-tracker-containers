@@ -13,11 +13,9 @@ The system is divided into three main logical components:
 2. **Notification Pipeline (Pipes & Filters)**: The raw SNS topic triggers a formatting Lambda, which prepares the message and publishes it to a second SNS topic that delivers email notifications to subscribers.
 3. **Web Application & API**: Users reach a Node.js/Express container running on **ECS Fargate** behind CloudFront and an Application Load Balancer. The homepage reads price history directly from DynamoDB; authenticated API calls go through **API Gateway** (two Lambda functions) secured with **Amazon Cognito** (OAuth2 / Hosted UI). Container images are stored in **ECR** and deployed via GitHub Actions.
 
-<br><br>
 <p align="center">
-<img width="1829" height="1327" alt="aws arch containers drawio" src="https://github.com/user-attachments/assets/7c382a6b-35bc-404f-87c3-548dd0f73431" />
+  <img src="architecture%20diagram.png" alt="AWS architecture diagram" width="100%" />
 </p>
-<br>
 
 ## 🔄 Automated Workflows (CI/CD)
 
