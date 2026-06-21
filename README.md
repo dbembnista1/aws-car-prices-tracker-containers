@@ -2,7 +2,7 @@
 
 Project created out of curiosity to check if prices for cars manufactured in specific year are getting lower with time or the inflation/quality keep the price high.
 
-This repository is an **evolution of the original [aws-car-prices-tracker](https://github.com/dbembnista1/aws-car-prices-tracker)** project. The core application logic (scraping, API, charts) stays the same — the focus here is on cloud engineering improvements: containerized web on **ECS Fargate** (replacing EC2 and also intruducing CloudFront and ALB), CI/CD including Terraform code changes (triggered on PR), remote Terraform state, and **dev/prod** separation using separate AWS accounts, state files and folder structure.
+This repository is an **evolution of the original [aws-car-prices-tracker](https://github.com/dbembnista1/aws-car-prices-tracker)** project. The core application logic (scraping, API, charts) stays the same — the focus here is on cloud engineering improvements: containerized web on **ECS Fargate** (replacing EC2 and also introducing CloudFront and ALB), **CPU-based ECS autoscaling**, CI/CD including Terraform code changes (triggered on PR), remote Terraform state, and **dev/prod** separation using separate AWS accounts, state files and folder structure.
 
 
 ## 🏗️ Architecture Overview
@@ -11,7 +11,7 @@ The system is divided into three main logical components:
 
 1. **Data Collection (Event-Driven)**: An AWS EventBridge cron job triggers a Python Lambda function daily at 08:00 CET. It scrapes car prices from external sources, stores calculated averages in Amazon DynamoDB, and — on success — publishes the result to SNS via Lambda Destinations.
 2. **Notification Pipeline (Pipes & Filters)**: The raw SNS topic triggers a formatting Lambda, which prepares the message and publishes it to a second SNS topic that delivers email notifications to subscribers.
-3. **Web Application & API**: Users reach a Node.js/Express container running on **ECS Fargate** behind CloudFront and an Application Load Balancer. The homepage reads price history directly from DynamoDB; authenticated API calls go through **API Gateway** (two Lambda functions) secured with **Amazon Cognito** (OAuth2 / Hosted UI). Container images are stored in **ECR** and deployed via GitHub Actions.
+3. **Web Application & API**: Users reach a Node.js/Express container running on **ECS Fargate** behind CloudFront and an Application Load Balancer. **Application Auto Scaling** keeps 2–4 tasks running (CPU target 70%) for HA across AZs; after deploy, task count is managed by autoscaling, not Terraform. The homepage reads price history directly from DynamoDB; authenticated API calls go through **API Gateway** (two Lambda functions) secured with **Amazon Cognito** (OAuth2 / Hosted UI). Container images are stored in **ECR** and deployed via GitHub Actions.
 
 <p align="center">
   <img src="architecture%20diagram.png" alt="AWS architecture diagram" width="100%" />
@@ -30,6 +30,7 @@ All workflows authenticate to AWS via **OIDC** — no long-lived access keys in 
 ## ✨ Key Features
 * **100% Infrastructure as Code**: Fully modularized Terraform setup with conditional resource creation.
 * **Containerized Web Tier**: Express.js runs as a Docker container on ECS Fargate — no EC2 management, no SSH/SCP deploys.
+* **ECS Auto Scaling**: CPU target tracking (70%) with min 2 / max 4 Fargate tasks; Terraform sets the initial count and then ignores `desired_count` so scaling is driven by load.
 * **Zero-Downtime Deployments**: CI/CD pipelines automatically build, zip, and deploy Lambda code and container images without manual intervention.
 * **Secure Authentication**: API endpoints protected by AWS Cognito User Pools.
 * **Serverless Notifications**: Decoupled email notification system utilizing Lambda Destinations and SNS.
@@ -37,7 +38,7 @@ All workflows authenticate to AWS via **OIDC** — no long-lived access keys in 
 * **Dynamic Configuration**: Features such as the data collector and email notifications can be toggled on/off via `.tfvars`.
 
 ## 🛠️ Tech Stack
-* **Cloud Provider**: AWS (ECS Fargate, ECR, ALB, CloudFront, Lambda, DynamoDB, API Gateway, Cognito, SNS, EventBridge, IAM, VPC, S3)
+* **Cloud Provider**: AWS (ECS Fargate, Application Auto Scaling, ECR, ALB, CloudFront, Lambda, DynamoDB, API Gateway, Cognito, SNS, EventBridge, IAM, VPC, S3)
 * **Infrastructure as Code**: Terraform (remote state on S3 + DynamoDB locking)
 * **CI/CD**: GitHub Actions (OIDC authentication)
 * **Backend**: Python 3.14 (Lambdas, BeautifulSoup, Pandas), Node.js / Express (charts & API client)
@@ -76,8 +77,9 @@ terraform/
         └── backend.conf
 
 scripts/
-├── deploy-dev.ps1 / deploy-dev.sh   # Dev deploy scripts
-└── deploy-prod.ps1 / deploy-prod.sh # Prod deploy scripts
+├── deploy-dev.ps1 / deploy-dev.sh       # Dev deploy scripts
+├── deploy-prod.ps1 / deploy-prod.sh     # Prod deploy scripts
+└── test-ecs-autoscaling.ps1             # Verify scaling config; optional ALB load test
 ```
 
 No shared state bucket or cross-account access — each side has its own bootstrap, backend, and AWS account.
