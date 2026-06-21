@@ -18,26 +18,25 @@ if ($LASTEXITCODE -ne 0 -or -not $Identity.Account) {
 }
 Write-Host "Authenticated as $($Identity.Arn) (account $($Identity.Account))."
 
-if (-not (Test-Path $BackendConf)) {
-  Write-Host "backend.conf not found. Reading values from bootstrap outputs..."
+Write-Host "Syncing backend.conf from bootstrap outputs..."
 
-  Push-Location $BootstrapDir
-  try {
-    $Outputs = terraform output -json | ConvertFrom-Json
-  } finally {
-    Pop-Location
-  }
+Push-Location $BootstrapDir
+try {
+  $Outputs = terraform output -json | ConvertFrom-Json
+} finally {
+  Pop-Location
+}
 
-  $BucketName = $Outputs.state_bucket_name.value
-  $TableName  = $Outputs.dynamodb_table_name.value
-  $Region     = $Outputs.aws_region.value
+$BucketName = $Outputs.state_bucket_name.value
+$TableName  = $Outputs.dynamodb_table_name.value
+$Region     = $Outputs.aws_region.value
 
-  if (-not $BucketName -or -not $TableName) {
-    Write-Error "ERROR: Could not read bootstrap outputs. Run 'terraform apply' in $BootstrapDir first."
-    exit 1
-  }
+if (-not $BucketName -or -not $TableName) {
+  Write-Error "ERROR: Could not read bootstrap outputs. Run 'terraform apply' in $BootstrapDir first."
+  exit 1
+}
 
-  @"
+@"
 bucket         = "$BucketName"
 key            = "terraform.tfstate"
 region         = "$Region"
@@ -45,14 +44,13 @@ dynamodb_table = "$TableName"
 encrypt        = true
 "@ | Set-Content $BackendConf
 
-  Write-Host "backend.conf generated from bootstrap outputs."
-}
+Write-Host "backend.conf synced (bucket: $BucketName)."
 
 Set-Location $EnvDir
 
 $env:TZ = "UTC"
 
-terraform init -backend-config="backend.conf"
+terraform init -reconfigure -backend-config="backend.conf"
 
 terraform apply -auto-approve
 if ($LASTEXITCODE -ne 0) {
@@ -61,8 +59,29 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $Branch = git -C "$ScriptDir\.." rev-parse --abbrev-ref HEAD
+$RepoRoot = "$ScriptDir\.."
 
+$RemoteBranch = git -C $RepoRoot ls-remote --heads origin $Branch 2>$null
+if ([string]::IsNullOrWhiteSpace($RemoteBranch)) {
+  Write-Error @"
+ERROR: Branch '$Branch' is not on GitHub (origin).
+GitHub Actions workflow_dispatch requires the ref to exist on the remote.
+
+  git push -u origin $Branch
+  ./scripts/deploy-dev.ps1
+
+Or trigger only the app deploy after push:
+  gh workflow run deploy-app.yml --ref $Branch -f environment=$Environment
+"@
+  exit 1
+}
+
+Write-Host "Triggering deploy-app workflow on branch '$Branch'..."
 gh workflow run deploy-app.yml --ref $Branch -f environment=$Environment
+if ($LASTEXITCODE -ne 0) {
+  Write-Error "ERROR: Could not trigger deploy-app workflow. See message above."
+  exit 1
+}
 
 Start-Sleep -Seconds 5
 
