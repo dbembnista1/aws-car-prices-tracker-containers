@@ -27,3 +27,8 @@ output "ecs_sg_id" {
   description = "ID of the ECS tasks security group"
   value       = aws_security_group.ecs_sg.id
 }
+
+output "target_group_arn" {
+  description = "ARN of the ALB target group for the ECS service"
+  value       = aws_lb_target_group.app.arn
+}

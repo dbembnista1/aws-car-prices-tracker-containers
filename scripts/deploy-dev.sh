@@ -18,21 +18,20 @@ if ! IDENTITY=$(aws sts get-caller-identity --profile "$AWS_PROFILE_NAME" --outp
 fi
 echo "Authenticated: $IDENTITY"
 
-if [ ! -f "$BACKEND_CONF" ]; then
-  echo "backend.conf not found. Reading values from bootstrap outputs..."
+echo "Syncing backend.conf from bootstrap outputs..."
 
-  pushd "$BOOTSTRAP_DIR" > /dev/null
-  BUCKET_NAME=$(terraform output -raw state_bucket_name)
-  TABLE_NAME=$(terraform output -raw dynamodb_table_name)
-  REGION=$(terraform output -raw aws_region)
-  popd > /dev/null
+pushd "$BOOTSTRAP_DIR" > /dev/null
+BUCKET_NAME=$(terraform output -raw state_bucket_name)
+TABLE_NAME=$(terraform output -raw dynamodb_table_name)
+REGION=$(terraform output -raw aws_region)
+popd > /dev/null
 
-  if [ -z "$BUCKET_NAME" ] || [ -z "$TABLE_NAME" ]; then
-    echo "ERROR: Could not read bootstrap outputs. Run 'terraform apply' in $BOOTSTRAP_DIR first."
-    exit 1
-  fi
+if [ -z "$BUCKET_NAME" ] || [ -z "$TABLE_NAME" ]; then
+  echo "ERROR: Could not read bootstrap outputs. Run 'terraform apply' in $BOOTSTRAP_DIR first."
+  exit 1
+fi
 
-  cat > "$BACKEND_CONF" <<EOF
+cat > "$BACKEND_CONF" <<EOF
 bucket         = "$BUCKET_NAME"
 key            = "terraform.tfstate"
 region         = "$REGION"
@@ -40,17 +39,29 @@ dynamodb_table = "$TABLE_NAME"
 encrypt        = true
 EOF
 
-  echo "backend.conf generated from bootstrap outputs."
-fi
+echo "backend.conf synced (bucket: $BUCKET_NAME)."
 
 cd "$ENV_DIR"
 
-terraform init -backend-config="backend.conf"
+terraform init -reconfigure -backend-config="backend.conf"
 
 terraform apply -auto-approve
 
 BRANCH=$(git -C "$SCRIPT_DIR/.." rev-parse --abbrev-ref HEAD)
 
+if ! git -C "$SCRIPT_DIR/.." ls-remote --exit-code --heads origin "$BRANCH" > /dev/null 2>&1; then
+  echo "ERROR: Branch '$BRANCH' is not on GitHub (origin)."
+  echo "GitHub Actions workflow_dispatch requires the ref to exist on the remote."
+  echo ""
+  echo "  git push -u origin $BRANCH"
+  echo "  ./scripts/deploy-dev.sh"
+  echo ""
+  echo "Or trigger only the app deploy after push:"
+  echo "  gh workflow run deploy-app.yml --ref $BRANCH -f environment=$ENVIRONMENT"
+  exit 1
+fi
+
+echo "Triggering deploy-app workflow on branch '$BRANCH'..."
 gh workflow run deploy-app.yml --ref "$BRANCH" -f environment="$ENVIRONMENT"
 
 sleep 5

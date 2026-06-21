@@ -63,9 +63,33 @@ variable "memory" {
 }
 
 variable "desired_count" {
-  description = "Number of running Fargate tasks"
+  description = "Number of running Fargate tasks when autoscaling is disabled"
   type        = number
   default     = 1
+}
+
+variable "min_capacity" {
+  description = "Minimum number of Fargate tasks (autoscaling floor; also used as initial desired count)"
+  type        = number
+  default     = 2
+}
+
+variable "max_capacity" {
+  description = "Maximum number of Fargate tasks (autoscaling ceiling)"
+  type        = number
+  default     = 4
+}
+
+variable "cpu_target_percent" {
+  description = "Target average CPU utilization (%) for autoscaling"
+  type        = number
+  default     = 70
+}
+
+variable "enable_autoscaling" {
+  description = "Enable ECS Service Auto Scaling based on CPU utilization"
+  type        = bool
+  default     = true
 }
 
 variable "tags" {

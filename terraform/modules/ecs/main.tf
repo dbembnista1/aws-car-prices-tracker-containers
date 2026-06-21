@@ -219,11 +219,14 @@ resource "aws_ecs_service" "app" {
   name            = "${var.project_name}-service"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.app.arn
-  desired_count   = var.desired_count
+  desired_count   = var.enable_autoscaling ? var.min_capacity : var.desired_count
   launch_type     = "FARGATE"
 
   # Allow Terraform to replace task definition revisions without forcing service recreation
   force_new_deployment = true
+
+  deployment_minimum_healthy_percent = 100
+  deployment_maximum_percent         = 200
 
   network_configuration {
     subnets          = var.subnet_ids
@@ -238,6 +241,10 @@ resource "aws_ecs_service" "app" {
   }
 
   depends_on = [aws_lb_listener.http]
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
 
   tags = var.tags
 }
