@@ -3,6 +3,23 @@ data "tls_certificate" "github" {
   url = "https://token.actions.githubusercontent.com/.well-known/openid-configuration"
 }
 
+# Repo + owner numeric IDs for GitHub's immutable OIDC `sub` (repos created or
+# renamed after 2026-07-15): repo:OWNER@OWNER_ID/REPO@REPO_ID:...
+data "github_rest_api" "repo" {
+  endpoint = "repos/${var.github_owner}/${var.github_repository}"
+}
+
+# Nazwa GitHub Environment pokrywa się z tagiem Environment (prod/dev),
+# dzięki czemu bootstrap dev i prod różnią się wyłącznie wartością tfvars.
+locals {
+  github_environment        = var.common_tags["Environment"]
+  github_repo_json          = jsondecode(data.github_rest_api.repo.body)
+  github_owner_id           = local.github_repo_json.owner.id
+  github_repository_id      = local.github_repo_json.id
+  github_oidc_sub_legacy    = "repo:${var.github_owner}/${var.github_repository}:*"
+  github_oidc_sub_immutable = "repo:${var.github_owner}@${local.github_owner_id}/${var.github_repository}@${local.github_repository_id}:*"
+}
+
 # 2. Tworzymy dostawcę tożsamości OIDC w AWS
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
@@ -26,19 +43,17 @@ resource "aws_iam_role" "github_actions_role" {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         }
-        # ZABEZPIECZENIE: Tylko Twoje konkretne repozytorium na GitHubie może użyć tej roli!
+        # ZABEZPIECZENIE: Tylko Twoje konkretne repozytorium na GitHubie może użyć tej roli.
+        # Oba wzorce: legacy (repo:owner/name) i immutable (repo:owner@id/name@id).
         StringLike = {
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_owner}/${var.github_repository}:*"
+          "token.actions.githubusercontent.com:sub" = [
+            local.github_oidc_sub_legacy,
+            local.github_oidc_sub_immutable,
+          ]
         }
       }
     }]
   })
-}
-
-# Nazwa GitHub Environment pokrywa się z tagiem Environment (prod/dev),
-# dzięki czemu bootstrap dev i prod różnią się wyłącznie wartością tfvars.
-locals {
-  github_environment = var.common_tags["Environment"]
 }
 
 # 4. GitHub Environment dla tego konta (izoluje sekrety/zmienne dev vs prod)
