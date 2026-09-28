@@ -93,8 +93,8 @@ Bootstrap configures OIDC trust for a **specific GitHub repository**. To deploy 
 **2. Clone this project and push it to your remote:**
 
 ```bash
-git clone https://github.com/dbembnista1/project1-car-prices-terraform-containers.git
-cd project1-car-prices-terraform-containers
+git clone https://github.com/dbembnista1/aws-car-prices-tracker-containers.git
+cd aws-car-prices-tracker-containers
 git remote set-url origin https://github.com/YOUR_USER/YOUR_REPO.git
 git push -u origin main
 ```
