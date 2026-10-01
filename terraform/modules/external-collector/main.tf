@@ -1,7 +1,14 @@
+resource "local_file" "handler_in_package" {
+  content  = file("${path.module}/../../../src/lambdas/data_collector_external.py")
+  filename = "${path.module}/python_deps/data_collector_external.py"
+}
+
 data "archive_file" "collector_zip" {
   type        = "zip"
-  source_file = "${path.module}/../../../src/lambdas/data_collector_external.py"
+  source_dir  = "${path.module}/python_deps"
   output_path = "${path.root}/.terraform/external-collector.zip"
+  excludes    = ["bin", "__pycache__"]
+  depends_on  = [local_file.handler_in_package]
 }
 
 resource "aws_dynamodb_table" "external" {
@@ -106,9 +113,10 @@ resource "aws_lambda_function" "collector" {
   role             = aws_iam_role.collector_role.arn
   handler          = "data_collector_external.lambda_handler"
   runtime          = "python3.14"
-  memory_size      = 128
-  timeout          = 600
+  memory_size      = 512
+  timeout          = 900
   source_code_hash = data.archive_file.collector_zip.output_base64sha256
+  layers           = [var.pandas_layer_arn]
 
   environment {
     variables = {

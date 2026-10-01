@@ -25,3 +25,9 @@ variable "schedule_expression" {
   type        = string
   default     = "cron(0 7 ? * SUN *)"
 }
+
+variable "pandas_layer_arn" {
+  description = "ARN of the AWS SDK Pandas Layer"
+  type        = string
+  default     = "arn:aws:lambda:eu-central-1:336392948345:layer:AWSSDKPandas-Python314:2"
+}
