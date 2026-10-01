@@ -12,6 +12,12 @@ backend.conf
 # Archives
 *.zip
 
+# Python
+__pycache__/
+src/lambdas/external_collector_pkg/
+terraform/modules/external-collector/python_deps/data_collector_external.py
+terraform/modules/external-collector/python_deps/bin/
+
 # Node.js
 node_modules/
 npm-debug.log*
@@ -20,8 +26,14 @@ npm-debug.log*
 .env
 .env.*
 
+# Private collector catalog (full Otomoto URLs; upload with aws s3 cp)
+collector_targets.json
+collector_targets.smoke.json
+
 
 # Markdown files
 *.md
 *.mdc
 !README.md
+
+invoke-out.json

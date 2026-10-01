@@ -1,0 +1,14 @@
+# COLLECTOR stack — copy to terraform.tfvars if you need to override defaults.
+# terraform.tfvars is in .gitignore.
+#
+# Local state (no bootstrap / remote backend). Apply only from this laptop:
+#   ./scripts/deploy-collector.ps1
+#
+# After apply, upload the gitignored catalog (C3):
+#   aws s3 cp collector_targets.json "s3://$(terraform output -raw targets_bucket_name)/$(terraform output -raw targets_object_key)" --profile collector
+
+project_name = "car-prices"
+
+# Optional:
+# targets_object_key  = "collector_targets.json"
+# schedule_expression = "cron(0 7 ? * SUN *)"
