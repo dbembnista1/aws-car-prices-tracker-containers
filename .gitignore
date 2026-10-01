@@ -12,6 +12,9 @@ backend.conf
 # Archives
 *.zip
 
+# Python
+__pycache__/
+
 # Node.js
 node_modules/
 npm-debug.log*
@@ -19,6 +22,9 @@ npm-debug.log*
 # Environment variables
 .env
 .env.*
+
+# Private collector catalog (full Otomoto URLs; upload with aws s3 cp)
+collector_targets.json
 
 
 # Markdown files
